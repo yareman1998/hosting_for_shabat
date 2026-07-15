@@ -2,15 +2,6 @@
 
 A platform connecting hosts and guests (soldiers, national service volunteers, students, and families) for Shabbat hosting. The application combines rigid factual search filters with semantic vector matches, a multi-stage AI Agent for expectation alignment, and real-time in-app chat.
 
-## Core Features
-
-1. **Hybrid Matchmaking (`pgvector`):** Matches guests to hosts by combining rigid requirements (city, kashrut level) with semantic vector similarity computed over free-text household atmosphere profiles.
-2. **AI Shabbat Icebreakers (LangGraph):** Automates personalized icebreaker questions based on host notes, guest description, and give-and-take skills, executed via a 4-node LangGraph pipeline with quality guardrails and parsed dynamically.
-3. **LangSmith Monitoring:** Complete tracing of LLM nodes, token consumption, and execution paths for performance auditing.
-4. **Concurrent Booking Controls:** Implements database row-locking (`with_for_update`) during post-claiming transactions to prevent double-booking.
-5. **Real-Time Chat (WebSockets):** Booking-specific secure chat rooms built with FastAPI WebSockets and database persistence, restricted to the matched host and guest.
-6. **Off-Platform Handshake:** Dynamic click-to-chat WhatsApp link generation pre-filled with matched booking coordinates.
-
 ## Project Structure
 
 This project is organized as a monorepo consisting of the backend API and frontend client:
@@ -31,6 +22,15 @@ hosting_for_shabat/
 │   └── package.json         # JavaScript dependencies
 └── PROJECT_CONTEXT.md       # Project milestone specifications and MVP context
 ```
+
+## Core Features
+
+1. **Hybrid Matchmaking (`pgvector`):** Matches guests to hosts by combining rigid requirements (city, kashrut level) with semantic vector similarity computed over free-text household atmosphere profiles.
+2. **AI Shabbat Icebreakers (LangGraph):** Automates personalized icebreaker questions based on host notes, guest description, and give-and-take skills, executed via a 4-node LangGraph pipeline with quality guardrails and parsed dynamically.
+3. **LangSmith Monitoring:** Complete tracing of LLM nodes, token consumption, and execution paths for performance auditing.
+4. **Concurrent Booking Controls:** Implements database row-locking (`with_for_update`) during post-claiming transactions to prevent double-booking.
+5. **Real-Time Chat (WebSockets):** Booking-specific secure chat rooms built with FastAPI WebSockets and database persistence, restricted to the matched host and guest.
+6. **Off-Platform Handshake:** Dynamic click-to-chat WhatsApp link generation pre-filled with matched booking coordinates.
 
 ## Tech Stack
 

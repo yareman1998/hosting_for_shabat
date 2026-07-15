@@ -1,18 +1,101 @@
 import hashlib
 import os
 import re
-from typing import TypedDict, List
+from typing import TypedDict, List, Any, Optional
 import httpx
 
 from app.core.config import settings
-from app.agent.prompts import ICEBREAKER_SYSTEM_PROMPT, ICEBREAKER_USER_TEMPLATE
+from app.agent.prompts import (
+    COMMONALITIES_SYSTEM_PROMPT,
+    COMMONALITIES_USER_TEMPLATE,
+    GENERATOR_SYSTEM_PROMPT,
+    GENERATOR_USER_TEMPLATE,
+    GUARDRAILS_SYSTEM_PROMPT,
+    GUARDRAILS_USER_TEMPLATE,
+)
 from langgraph.graph import StateGraph, START, END
+from langchain_core.language_models.llms import LLM
+from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 
 # Initialize LangSmith environment variables if configured
 if settings.LANGCHAIN_TRACING_V2 and settings.LANGCHAIN_API_KEY:
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
     os.environ["LANGCHAIN_API_KEY"] = settings.LANGCHAIN_API_KEY
     os.environ["LANGCHAIN_PROJECT"] = settings.LANGCHAIN_PROJECT
+
+class HFInferenceAPILLM(LLM):
+    """Custom LangChain LLM wrapper that calls the Hugging Face OpenAI-compatible completions API.
+    This handles model routing automatically while maintaining LangChain & LangSmith tracing compatibility.
+    """
+    model_id: str
+    token: str
+
+    @property
+    def _llm_type(self) -> str:
+        return "hf_inference_api"
+
+    def _call(
+        self,
+        prompt: str,
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> str:
+        """Call Hugging Face Inference API Router."""
+        # Parse Llama 3 format if present to send structured messages
+        messages = []
+        system_match = re.search(r"<\|start_header_id\|>system<\|end_header_id\|>\n\n(.*?)<\|eot_id\|>", prompt, re.DOTALL)
+        user_match = re.search(r"<\|start_header_id\|>user<\|end_header_id\|>\n\n(.*?)<\|eot_id\|>", prompt, re.DOTALL)
+        
+        if system_match and user_match:
+            messages.append({"role": "system", "content": system_match.group(1).strip()})
+            messages.append({"role": "user", "content": user_match.group(1).strip()})
+        else:
+            messages.append({"role": "user", "content": prompt})
+
+        # Resolve model name mapping for deprecated models
+        target_model = self.model_id
+        if target_model == "meta-llama/Meta-Llama-3-8B-Instruct":
+            target_model = "meta-llama/Llama-3.1-8B-Instruct:deepinfra"
+
+        try:
+            response = httpx.post(
+                "https://router.huggingface.co/v1/chat/completions",
+                headers={"Authorization": f"Bearer {self.token}"},
+                json={
+                    "model": target_model,
+                    "messages": messages,
+                    "temperature": 0.7,
+                    "max_tokens": 512,
+                },
+                timeout=20.0,
+            )
+            if response.status_code == 200:
+                data = response.json()
+                if "choices" in data and len(data["choices"]) > 0:
+                    return data["choices"][0]["message"]["content"].strip()
+                raise ValueError(f"Unexpected response format: {data}")
+            else:
+                raise ValueError(f"HTTP {response.status_code}: {response.text}")
+        except Exception as e:
+            print(f"[HFInferenceAPILLM] Error: {e}")
+            raise e
+
+# Initialize custom LLM wrapper
+llm = None
+if settings.HF_ACCESS_TOKEN and settings.HF_MODEL:
+    llm = HFInferenceAPILLM(
+        model_id=settings.HF_MODEL,
+        token=settings.HF_ACCESS_TOKEN
+    )
+
+def format_llama_prompt(system_prompt: str, user_prompt: str) -> str:
+    """Format prompts for the Llama 3 Instruct model."""
+    return (
+        f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n"
+        f"{system_prompt}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n"
+        f"{user_prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
+    )
 
 def _normalize(vector: list[float]) -> list[float]:
     """Normalize a vector to unit length in-place (L2 norm)."""
@@ -32,90 +115,107 @@ class IcebreakerState(TypedDict):
     host_city: str
     host_kashrut: str
     host_religious: str
-    host_atmosphere: str
+    host_free_text: str
     guest_status: str
     guest_dietary: str
     guest_preference: str
-    raw_response: str
+    guest_skills: str
+    commonalities: str
+    raw_questions: str
+    checked_questions: str
     icebreakers: List[str]
 
-def query_hf_llm(system_prompt: str, user_prompt: str) -> str:
-    """Query Hugging Face Inference API for chat completion."""
-    if not settings.HF_ACCESS_TOKEN or not settings.HF_MODEL:
-        return ""
-    try:
-        # Prompt structure for Llama 3 Instruct
-        prompt = (
-            f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n"
-            f"{system_prompt}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n"
-            f"{user_prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
-        )
-        response = httpx.post(
-            f"https://api-inference.huggingface.co/models/{settings.HF_MODEL}",
-            headers={"Authorization": f"Bearer {settings.HF_ACCESS_TOKEN}"},
-            json={
-                "inputs": prompt,
-                "parameters": {
-                    "max_new_tokens": 512,
-                    "temperature": 0.7,
-                }
-            },
-            timeout=15.0,
-        )
-        if response.status_code == 200:
-            data = response.json()
-            if isinstance(data, list) and data and "generated_text" in data[0]:
-                gen_text = data[0]["generated_text"]
-                if gen_text.startswith(prompt):
-                    return gen_text[len(prompt):].strip()
-                return gen_text.strip()
-            elif isinstance(data, dict) and "generated_text" in data:
-                return data["generated_text"].strip()
-        else:
-            print(f"[HF LLM] status {response.status_code}: {response.text}")
-    except Exception as e:
-        print(f"[HF LLM] error: {e}")
-    return ""
-
-def generate_node(state: IcebreakerState) -> dict:
-    """Node 1: Generate Raw Icebreaker Suggestions from HF LLM."""
-    user_prompt = ICEBREAKER_USER_TEMPLATE.format(
+def analyze_commonalities_node(state: IcebreakerState) -> dict:
+    """Node 1: Analyze similarities and differences between host and guest."""
+    if not llm:
+        return {"commonalities": "No LLM configured. Skipping commonalities analysis."}
+        
+    user_prompt = COMMONALITIES_USER_TEMPLATE.format(
         host_city=state.get("host_city") or "Unknown",
         host_kashrut=state.get("host_kashrut") or "Unknown",
         host_religious=state.get("host_religious") or "Unknown",
-        host_atmosphere=state.get("host_atmosphere") or "Unknown",
+        host_free_text=state.get("host_free_text") or "None",
         guest_status=state.get("guest_status") or "Regular Guest",
         guest_dietary=state.get("guest_dietary") or "None",
-        guest_preference=state.get("guest_preference") or "None"
+        guest_preference=state.get("guest_preference") or "None",
+        guest_skills=state.get("guest_skills") or "None"
     )
     
-    raw = query_hf_llm(ICEBREAKER_SYSTEM_PROMPT, user_prompt)
-    return {"raw_response": raw}
+    prompt = format_llama_prompt(COMMONALITIES_SYSTEM_PROMPT, user_prompt)
+    try:
+        response = llm.invoke(prompt)
+        return {"commonalities": response.strip()}
+    except Exception as e:
+        print(f"[LangGraph Node: analyze_commonalities] Error: {e}")
+        return {"commonalities": f"Error during analysis: {e}"}
+
+def generate_questions_node(state: IcebreakerState) -> dict:
+    """Node 2: Generate 3 personalized icebreaker questions based on analyzed commonalities."""
+    if not llm:
+        return {"raw_questions": ""}
+        
+    user_prompt = GENERATOR_USER_TEMPLATE.format(
+        host_city=state.get("host_city") or "Unknown",
+        host_kashrut=state.get("host_kashrut") or "Unknown",
+        host_religious=state.get("host_religious") or "Unknown",
+        host_free_text=state.get("host_free_text") or "None",
+        guest_status=state.get("guest_status") or "Regular Guest",
+        guest_dietary=state.get("guest_dietary") or "None",
+        guest_preference=state.get("guest_preference") or "None",
+        commonalities=state.get("commonalities") or "None"
+    )
+    
+    prompt = format_llama_prompt(GENERATOR_SYSTEM_PROMPT, user_prompt)
+    try:
+        response = llm.invoke(prompt)
+        return {"raw_questions": response.strip()}
+    except Exception as e:
+        print(f"[LangGraph Node: generate_questions] Error: {e}")
+        return {"raw_questions": ""}
+
+def guardrails_node(state: IcebreakerState) -> dict:
+    """Node 3: Validate and filter questions for respectfulness and Shabbat appropriateness."""
+    raw_questions = state.get("raw_questions", "")
+    if not raw_questions:
+        return {"checked_questions": ""}
+    if not llm:
+        return {"checked_questions": raw_questions}
+        
+    user_prompt = GUARDRAILS_USER_TEMPLATE.format(raw_questions=raw_questions)
+    prompt = format_llama_prompt(GUARDRAILS_SYSTEM_PROMPT, user_prompt)
+    try:
+        response = llm.invoke(prompt)
+        return {"checked_questions": response.strip()}
+    except Exception as e:
+        print(f"[LangGraph Node: guardrails] Error: {e}")
+        return {"checked_questions": raw_questions}
 
 def parse_and_validate_node(state: IcebreakerState) -> dict:
-    """Node 2: Parse raw LLM output and filter/verify list of questions."""
-    raw = state.get("raw_response", "")
+    """Node 4: Parse final questions, apply regex formatting, and filter/verify list."""
+    checked = state.get("checked_questions", "")
+    if not checked:
+        checked = state.get("raw_questions", "")
+        
     default_icebreakers = [
         "What is your favorite Shabbat custom?",
         "Do you have any dietary preferences or restrictions?",
         "Are there any specific Shabbat rules you observe that we should coordinate?",
     ]
     
-    if not raw:
+    if not checked:
         return {"icebreakers": default_icebreakers}
         
-    lines = raw.split("\n")
+    lines = checked.split("\n")
     questions = []
     for line in lines:
         line = line.strip()
         if not line:
             continue
-        # Remove markdown lists, numeric lists like 1. 2. or bullet points
+        # Remove markdown list prefixes, numeric lists like 1. 2. or bullet points
         clean = re.sub(r"^(\d+[\.\)]|\*|-)\s*", "", line).strip()
         if len(clean) > 8 and (clean.endswith("?") or "?" in clean):
             questions.append(clean)
             
-    # Fallback if parsing didn't find enough valid questions
     if len(questions) < 2:
         return {"icebreakers": default_icebreakers}
         
@@ -123,11 +223,15 @@ def parse_and_validate_node(state: IcebreakerState) -> dict:
 
 # Build the LangGraph workflow
 workflow = StateGraph(IcebreakerState)
-workflow.add_node("generate", generate_node)
+workflow.add_node("analyze_commonalities", analyze_commonalities_node)
+workflow.add_node("generate_questions", generate_questions_node)
+workflow.add_node("guardrails", guardrails_node)
 workflow.add_node("parse_validate", parse_and_validate_node)
 
-workflow.add_edge(START, "generate")
-workflow.add_edge("generate", "parse_validate")
+workflow.add_edge(START, "analyze_commonalities")
+workflow.add_edge("analyze_commonalities", "generate_questions")
+workflow.add_edge("generate_questions", "guardrails")
+workflow.add_edge("guardrails", "parse_validate")
 workflow.add_edge("parse_validate", END)
 
 icebreaker_agent = workflow.compile()
@@ -147,7 +251,7 @@ class AgentService:
         if settings.HF_ACCESS_TOKEN and settings.HF_MODEL:
             try:
                 response = httpx.post(
-                    f"https://api-inference.huggingface.co/models/{settings.HF_MODEL}",
+                    f"https://router.huggingface.co/hf-inference/models/{settings.HF_MODEL}",
                     headers={"Authorization": f"Bearer {settings.HF_ACCESS_TOKEN}"},
                     json={"inputs": text},
                     timeout=10.0,
@@ -175,11 +279,14 @@ class AgentService:
             "host_city": host_attributes.get("city") or "Unknown",
             "host_kashrut": str(host_attributes.get("kashrut_level") or "Unknown"),
             "host_religious": host_attributes.get("religious_orientation") or "Unknown",
-            "host_atmosphere": host_attributes.get("atmosphere") or "Unknown",
+            "host_free_text": host_attributes.get("free_text_notes") or "None",
             "guest_status": "Soldier/National Service" if guest_attributes.get("is_soldier") else "Regular Guest",
             "guest_dietary": guest_attributes.get("food_preferences_allergies") or "None",
             "guest_preference": guest_attributes.get("description") or "None",
-            "raw_response": "",
+            "guest_skills": guest_attributes.get("skills_give_take") or "None",
+            "commonalities": "",
+            "raw_questions": "",
+            "checked_questions": "",
             "icebreakers": []
         }
         

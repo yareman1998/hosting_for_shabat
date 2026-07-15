@@ -26,5 +26,10 @@ class Settings(BaseSettings):
     HF_ACCESS_TOKEN: str | None = None
     HF_MODEL: str | None = None
 
+    # LangSmith / LangChain Tracing
+    LANGCHAIN_TRACING_V2: bool = False
+    LANGCHAIN_API_KEY: str | None = None
+    LANGCHAIN_PROJECT: str = "hosting-for-shabat"
+
 
 settings = Settings()

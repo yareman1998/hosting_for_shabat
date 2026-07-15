@@ -45,7 +45,11 @@ app/
 * `POST /api/bookings/request` - Requests accommodation from a guest to a host profile.
 * `GET /api/bookings/incoming` - Returns pending booking requests awaiting the host's approval.
 * `PATCH /api/bookings/{match_id}/respond` - Accepts or rejects a pending booking request.
-* `GET /api/matches/{match_id}/details` - Retrieves detailed information about an active match, including a pre-filled click-to-chat WhatsApp link and custom AI icebreaker questions.
+* `GET /api/matches/{match_id}/details` - Retrieves detailed information about an active match, including a pre-filled click-to-chat WhatsApp link and custom AI icebreaker questions from the LangGraph agent.
+
+### 💬 In-App Chat (`/api/matches`)
+* `GET /api/matches/{match_id}/messages` - Retrieves chat message history for a booking match, sorted chronologically.
+* `WS /api/matches/{match_id}/chat/ws` - WebSocket endpoint for bidirectional real-time messaging between host and guest. Authenticates via JWT token query param and saves messages in the database.
 
 ---
 

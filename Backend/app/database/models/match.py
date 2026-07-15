@@ -44,3 +44,6 @@ class Match(Base):
 
     guest_post: Mapped["GuestPost"] = relationship(back_populates="matches")
     host_profile: Mapped["HostProfile"] = relationship()
+    messages: Mapped[list["Message"]] = relationship(
+        back_populates="match", cascade="all, delete-orphan"
+    )

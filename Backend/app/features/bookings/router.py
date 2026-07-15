@@ -145,11 +145,14 @@ def get_match_details(
     host_info = {
         "city": match.host_profile.city,
         "kashrut_level": match.host_profile.kashrut_level,
-        "religious_orientation": match.host_profile.religious_orientation
+        "religious_orientation": match.host_profile.religious_orientation,
+        "free_text_notes": match.host_profile.free_text_notes,
     }
     guest_info = {
         "is_soldier": match.guest_post.guest_profile.is_soldier_or_national_service,
-        "description": match.guest_post.description
+        "description": match.guest_post.description,
+        "food_preferences_allergies": match.guest_post.guest_profile.food_preferences_allergies,
+        "skills_give_take": match.guest_post.guest_profile.skills_give_take
     }
     icebreakers = AgentService.generate_icebreakers(host_info, guest_info)
     

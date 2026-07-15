@@ -144,7 +144,6 @@ class AgentService:
         if not text:
             return [0.0] * 1536
 
-        # 1. Hugging Face Inference API
         if settings.HF_ACCESS_TOKEN and settings.HF_MODEL:
             try:
                 response = httpx.post(
@@ -155,7 +154,6 @@ class AgentService:
                 )
                 if response.status_code == 200:
                     data = response.json()
-                    # Unwrap nested list structure returned by some HF models
                     while isinstance(data, list) and data and isinstance(data[0], list):
                         data = data[0]
                     if isinstance(data, list) and all(isinstance(x, (int, float)) for x in data):

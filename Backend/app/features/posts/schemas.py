@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel, ConfigDict
 from app.database.models.post import PostStatus
 
@@ -16,4 +17,8 @@ class GuestPostResponse(GuestPostBase):
     id: uuid.UUID
     guest_profile_id: uuid.UUID
     status: PostStatus
+    is_urgent: bool
     created_at: datetime
+    guest_name: str
+    unit_name: Optional[str] = None
+

@@ -16,7 +16,7 @@ app/
 │   ├── listings/             # Host listings creation and host discovery search
 │   ├── posts/                # Guest posts board and reverse-auction claiming
 │   ├── bookings/             # Direct booking requests, approvals, WhatsApp & Icebreaker generation
-│   └── panic/                # Emergency panic button system (Thursday 16:00 lock)
+│   └── admin/                # Admin management panel
 ├── agent/                    # AI Agent helper services (embeddings, icebreaker generation)
 └── main.py                   # Main FastAPI entry point
 ```
@@ -46,9 +46,6 @@ app/
 * `GET /api/bookings/incoming` - Returns pending booking requests awaiting the host's approval.
 * `PATCH /api/bookings/{match_id}/respond` - Accepts or rejects a pending booking request.
 * `GET /api/matches/{match_id}/details` - Retrieves detailed information about an active match, including a pre-filled click-to-chat WhatsApp link and custom AI icebreaker questions.
-
-### 🚨 Emergency Panic Button (`/api/panic-button`)
-* `POST /api/panic-button/activate` - Activates last-minute emergency response to return nearby available-for-emergency hosts. Restricts activation to after Thursday 16:00 by default.
 
 ---
 

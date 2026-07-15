@@ -2,12 +2,11 @@ import uuid
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
 from app.database.session import get_db
 from app.database.models.user import User, UserType
 from app.database.models.post import GuestPost, PostStatus
 from app.database.models.match import Match, MatchStatus
-from app.features.auth.router import get_current_user
+from app.features.auth.services import get_current_user
 from app.features.posts.schemas import GuestPostCreate, GuestPostResponse
 
 router = APIRouter(prefix="/posts", tags=["Guest Posts"])
@@ -41,7 +40,9 @@ def get_open_posts(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    return db.query(GuestPost).filter(GuestPost.status == PostStatus.OPEN).all()
+    posts = db.query(GuestPost).filter(GuestPost.status == PostStatus.OPEN).all()
+    posts.sort(key=lambda p: (not p.is_urgent, p.requested_date))
+    return posts
 
 @router.post("/{post_id}/claim")
 def claim_post(

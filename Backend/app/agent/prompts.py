@@ -1,5 +1,3 @@
-# Prompt templates for LLM icebreaker generation and matching orientation.
-
 ICEBREAKER_SYSTEM_PROMPT = """
 You are an expert hospitality assistant for the 'Hosting for Shabbat' platform.
 Your task is to analyze the difference between a Shabbat host's profile/lifestyle and a guest's preferences,

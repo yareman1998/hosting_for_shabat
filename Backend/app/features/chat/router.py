@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSock
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.database.session import get_db
+from app.database.session import get_db, SessionLocal
 from app.database.models.user import User, UserType
 from app.database.models.match import Match
 from app.database.models.message import Message
@@ -89,10 +89,8 @@ async def websocket_chat_endpoint(
     token: str = Query(...)
 ):
     """WebSocket endpoint for real-time messaging between host and guest."""
-    # Obtain fresh db session for this persistent connection thread
-    db = next(get_db())
     
-    # 1. Authenticate user from JWT token
+    # 1. Authenticate user from JWT token and verify authorization using a transient db session
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
         user_id_str = payload.get("sub")
@@ -101,25 +99,28 @@ async def websocket_chat_endpoint(
             return
         
         user_uuid = uuid.UUID(user_id_str)
-        user = db.query(User).filter(User.id == user_uuid).first()
-        if not user:
-            await websocket.close(code=4001, reason="User not found")
-            return
     except Exception:
         await websocket.close(code=4001, reason="Could not validate credentials")
         return
 
-    # 2. Verify match existence and user authorization
-    match = db.query(Match).filter(Match.id == match_id).first()
-    if not match:
-        await websocket.close(code=4004, reason="Match not found")
-        return
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.id == user_uuid).first()
+        if not user:
+            await websocket.close(code=4001, reason="User not found")
+            return
+            
+        match = db.query(Match).filter(Match.id == match_id).first()
+        if not match:
+            await websocket.close(code=4004, reason="Match not found")
+            return
 
-    if not _verify_match_access(user, match):
-        await websocket.close(code=4003, reason="Not authorized for this chat")
-        return
+        if not _verify_match_access(user, match):
+            await websocket.close(code=4003, reason="Not authorized for this chat")
+            return
+            
+        user_id = user.id
 
-    # 3. Establish WebSocket connection
+    # 2. Establish WebSocket connection
     await manager.connect(match_id, websocket)
     try:
         while True:
@@ -129,28 +130,29 @@ async def websocket_chat_endpoint(
             if not data:
                 continue
 
-            # Save the message to database
-            new_msg = Message(
-                match_id=match_id,
-                sender_id=user.id,
-                content=data
-            )
-            db.add(new_msg)
-            db.commit()
-            db.refresh(new_msg)
+            # Save the message to database using a transient session
+            with SessionLocal() as db:
+                new_msg = Message(
+                    match_id=match_id,
+                    sender_id=user_id,
+                    content=data
+                )
+                db.add(new_msg)
+                db.commit()
+                db.refresh(new_msg)
+                
+                msg_payload = {
+                    "id": str(new_msg.id),
+                    "match_id": str(new_msg.match_id),
+                    "sender_id": str(new_msg.sender_id),
+                    "content": new_msg.content,
+                    "created_at": new_msg.created_at.isoformat()
+                }
 
             # Broadcast message to all active connections in this match chatroom
-            await manager.broadcast(match_id, {
-                "id": str(new_msg.id),
-                "match_id": str(new_msg.match_id),
-                "sender_id": str(new_msg.sender_id),
-                "content": new_msg.content,
-                "created_at": new_msg.created_at.isoformat()
-            })
+            await manager.broadcast(match_id, msg_payload)
     except WebSocketDisconnect:
         manager.disconnect(match_id, websocket)
     except Exception as e:
         print(f"[WebSocket Error] Match {match_id}: {e}")
         manager.disconnect(match_id, websocket)
-    finally:
-        db.close()

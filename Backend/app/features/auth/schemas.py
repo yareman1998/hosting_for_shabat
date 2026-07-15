@@ -6,6 +6,18 @@ from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 from app.database.models.profile import KashrutLevel
 from app.database.models.user import UserType
 
+def normalize_israeli_phone_number(v: str) -> str:
+    """Normalize and validate an Israeli mobile phone number to E.164 format."""
+    cleaned = re.sub(r"[\s\-\(\)]", "", v)
+    pattern = r"^(05\d{8}|\+9725\d{8}|9725\d{8})$"
+    if not re.match(pattern, cleaned):
+        raise ValueError("Please enter a valid Israeli mobile phone number (e.g., 050-1234567)")
+    if cleaned.startswith("05"):
+        return "+972" + cleaned[1:]
+    if cleaned.startswith("972"):
+        return "+" + cleaned
+    return cleaned
+
 class UserBase(BaseModel):
     email: EmailStr
     full_name: str
@@ -16,15 +28,7 @@ class UserBase(BaseModel):
     @field_validator("phone_number")
     @classmethod
     def validate_phone_number(cls, v: str) -> str:
-        cleaned = re.sub(r"[\s\-\(\)]", "", v)
-        pattern = r"^(05\d{8}|\+9725\d{8}|9725\d{8})$"
-        if not re.match(pattern, cleaned):
-            raise ValueError("Please enter a valid Israeli mobile phone number (e.g., 050-1234567)")
-        if cleaned.startswith("05"):
-            return "+972" + cleaned[1:]
-        if cleaned.startswith("972"):
-            return "+" + cleaned
-        return cleaned
+        return normalize_israeli_phone_number(v)
 
 class UserCreate(UserBase):
     password: str
@@ -95,12 +99,7 @@ class VerifyPhoneRequest(BaseModel):
     @classmethod
     def normalize_phone(cls, v: str) -> str:
         """Normalize to E.164 so the router can query directly."""
-        cleaned = re.sub(r"[\s\-\(\)]", "", v)
-        if cleaned.startswith("05"):
-            return "+972" + cleaned[1:]
-        if cleaned.startswith("972"):
-            return "+" + cleaned
-        return cleaned
+        return normalize_israeli_phone_number(v)
 
 class ProfileResponse(BaseModel):
     """Unified read schema for both host and guest profile data on /me."""

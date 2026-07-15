@@ -90,12 +90,24 @@ def respond_booking(
             detail="Booking request not found"
         )
         
-    match.status = data.status
     if data.status == MatchStatus.MATCHED:
         if match.guest_post:
+            if match.guest_post.status == PostStatus.MATCHED:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="This guest hosting request has already been matched with another host"
+                )
             match.guest_post.status = PostStatus.MATCHED
             match.guest_post.claimed_by_host_id = current_user.host_profile.id
             
+            # Reject other pending matches for this guest post
+            db.query(Match).filter(
+                Match.guest_post_id == match.guest_post_id,
+                Match.id != match.id,
+                Match.status == MatchStatus.PENDING
+            ).update({"status": MatchStatus.REJECTED})
+            
+    match.status = data.status
     db.commit()
     db.refresh(match)
     return match

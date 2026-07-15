@@ -36,8 +36,22 @@ class User(Base):
         server_default=func.now(),
     )
     biography: Mapped[Optional[str]]
+    is_email_verified: Mapped[bool] = mapped_column(
+        default=False, server_default=text("false")
+    )
+    email_verification_code: Mapped[Optional[str]] = mapped_column(nullable=True)
+    email_verification_expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    is_phone_verified: Mapped[bool] = mapped_column(
+        default=False, server_default=text("false")
+    )
+    telegram_verification_code: Mapped[Optional[str]] = mapped_column(nullable=True)
+    telegram_verification_expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    telegram_chat_id: Mapped[Optional[str]] = mapped_column(nullable=True)
 
-    # Profiles (one per user, by role)
     host_profile: Mapped["HostProfile"] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )

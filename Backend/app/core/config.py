@@ -1,4 +1,3 @@
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -10,21 +9,34 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # Database
     DATABASE_URL: str
 
-    # JWT / Security
     JWT_SECRET: str
     JWT_ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
 
-    # Admin credentials
     ADMIN_EMAIL: str
     ADMIN_PASSWORD: str
 
-    # Hugging Face Inference API (embedding model)
     HF_ACCESS_TOKEN: str | None = None
     HF_MODEL: str | None = None
+
+    LANGCHAIN_TRACING_V2: str | None = None
+    LANGCHAIN_API_KEY: str | None = None
+    LANGCHAIN_PROJECT: str | None = None
+
+    CORS_ORIGINS: str = "*"
+
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_FROM_EMAIL: str | None = None
+
+    TELEGRAM_BOT_TOKEN: str | None = None
+    TELEGRAM_BOT_USERNAME: str | None = None
+
+    FRONTEND_URL: str = "http://localhost:5173"
 
 
 settings = Settings()

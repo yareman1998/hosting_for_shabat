@@ -46,3 +46,26 @@ class GuestPost(Base):
     matches: Mapped[list["Match"]] = relationship(
         back_populates="guest_post", cascade="all, delete-orphan"
     )
+
+    @property
+    def is_urgent(self) -> bool:
+        from datetime import datetime, timezone
+        if self.status != PostStatus.OPEN:
+            return False
+        delta = self.requested_date - datetime.now(timezone.utc)
+        return 0 <= delta.total_seconds() < 86400
+
+    @property
+    def guest_name(self) -> str:
+        if self.guest_profile:
+            if self.guest_profile.is_anonymous:
+                return "Soldier" if self.guest_profile.is_soldier_or_national_service else "Anonymous Guest"
+            return self.guest_profile.user.full_name if self.guest_profile.user else "Guest"
+        return "Guest"
+
+    @property
+    def unit_name(self) -> Optional[str]:
+        if self.guest_profile and not self.guest_profile.is_anonymous:
+            return self.guest_profile.unit_name
+        return None
+

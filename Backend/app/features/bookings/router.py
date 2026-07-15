@@ -3,12 +3,11 @@ import urllib.parse
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
 from app.database.session import get_db
 from app.database.models.user import User, UserType
 from app.database.models.match import Match, MatchStatus
 from app.database.models.post import GuestPost, PostStatus
-from app.features.auth.router import get_current_user
+from app.features.auth.services import get_current_user
 from app.features.bookings.schemas import BookingRequestCreate, BookingResponse, MatchStatusUpdate
 from app.agent.services import AgentService
 
@@ -120,13 +119,29 @@ def get_match_details(
     host_user = match.host_profile.user
     guest_user = match.guest_post.guest_profile.user
     
-    whatsapp_recipient = guest_user if is_host else host_user
-    phone_number = whatsapp_recipient.phone_number.replace("+", "").replace("-", "").strip()
-    
-    message_text = f"Hi {whatsapp_recipient.full_name}! This is {current_user.full_name} from Hosting for Shabbat. Looking forward to hosting/visiting this upcoming weekend!"
-    encoded_message = urllib.parse.quote(message_text)
-    whatsapp_link = f"https://wa.me/{phone_number}?text={encoded_message}"
-    
+    if match.status == MatchStatus.MATCHED:
+        whatsapp_recipient = guest_user if is_host else host_user
+        phone_number = whatsapp_recipient.phone_number.replace("+", "").replace("-", "").strip()
+        
+        is_guest_anonymous = match.guest_post.guest_profile.is_anonymous if match.guest_post.guest_profile else False
+        is_guest_soldier = match.guest_post.guest_profile.is_soldier_or_national_service if match.guest_post.guest_profile else False
+        
+        if is_guest_anonymous and is_host:
+            guest_name = "Soldier" if is_guest_soldier else "Anonymous Guest"
+        else:
+            guest_name = guest_user.full_name
+            
+        host_name = host_user.full_name
+        
+        recipient_name = guest_name if is_host else host_name
+        message_text = f"Hi {recipient_name}! This is {current_user.full_name} from Hosting for Shabbat. Looking forward to hosting/visiting this upcoming weekend!"
+        encoded_message = urllib.parse.quote(message_text)
+        whatsapp_link = f"https://wa.me/{phone_number}?text={encoded_message}"
+    else:
+        whatsapp_link = None
+        host_name = "Anonymous Host"
+        guest_name = "Anonymous Guest"
+
     host_info = {
         "city": match.host_profile.city,
         "kashrut_level": match.host_profile.kashrut_level,
@@ -141,8 +156,8 @@ def get_match_details(
     return {
         "match_id": str(match.id),
         "status": match.status,
-        "host_name": host_user.full_name,
-        "guest_name": guest_user.full_name,
+        "host_name": host_name,
+        "guest_name": guest_name,
         "whatsapp_link": whatsapp_link,
         "icebreakers": icebreakers
     }

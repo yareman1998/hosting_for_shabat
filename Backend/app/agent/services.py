@@ -26,7 +26,6 @@ class AgentService:
         if not text:
             return [0.0] * 1536
 
-        # 1. Hugging Face Inference API
         if settings.HF_ACCESS_TOKEN and settings.HF_MODEL:
             try:
                 import httpx
@@ -38,7 +37,6 @@ class AgentService:
                 )
                 if response.status_code == 200:
                     data = response.json()
-                    # Unwrap nested list structure returned by some HF models
                     while isinstance(data, list) and data and isinstance(data[0], list):
                         data = data[0]
                     if isinstance(data, list) and all(isinstance(x, (int, float)) for x in data):
@@ -48,7 +46,6 @@ class AgentService:
             except Exception as e:
                 print(f"[HF] error: {e}. Falling back to hash embedding.")
 
-        # 3. Deterministic hash-based fallback (no external calls)
         digest = hashlib.sha256(text.encode("utf-8")).digest()
         vector = [((digest[i % 32] + i * 17) % 256 / 127.5) - 1.0 for i in range(1536)]
         return _normalize(vector)
@@ -56,7 +53,6 @@ class AgentService:
     @staticmethod
     def generate_icebreakers(host_attributes: dict, guest_attributes: dict) -> list[str]:
         """Return 3 personalized icebreaker questions for a host-guest pair."""
-        # Static MVP placeholders — replace with LLM call when available
         return [
             "What is your favorite Shabbat custom?",
             "Do you have any dietary preferences or restrictions?",

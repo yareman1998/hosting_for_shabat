@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
-import Layout from './components/Common/Layout'
-import Login from './pages/Login/Login'
+import Layout from './components/Common/Layout/Layout'
 
-// Placeholder page components (Swap these out later for your real pages!)
-const HomePage = () => <div><h1>דף הבית - ברוכים הבאים!</h1></div>;
-const FindHost = () => <div><h1>מצא מארח לשבת</h1></div>;
-const MyRequests = () => <div><h1>לוח הבקשות שלי</h1></div>;
-const RequestsBoard = () => <div><h1>לוח בקשות אירוח לחיילים</h1></div>;
-const ProfilePage = () => <div><h1>הפרופיל שלי</h1></div>;
-const NotFound = () => <div><h1>העמוד לא נמצא (404)</h1></div>;
+import Login from './pages/Login/Login'
+import Signup from './pages/Signup/Signup'
+import HomePage from './pages/Home/Home'
+import FindHost from './pages/FindHost/FindHost'
+import MyRequests from './pages/MyRequests/MyRequests'
+import RequestsBoard from './pages/RequestsBoard/RequestsBoard'
+import ProfilePage from './pages/Profile/Profile'
+import NotFound from './pages/NotFound/NotFound'
 
 export default function App() {
   // Control authorization state ('guest', 'host', or null)
@@ -48,6 +48,10 @@ export default function App() {
     {
       path: '/login',
       element: userRole ? <Navigate to="/" replace /> : <Login />
+    },
+    {
+      path: '/signup',
+      element: userRole ? <Navigate to="/" replace /> : <Signup />
     },
     {
       path: '*',

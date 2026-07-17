@@ -1,17 +1,21 @@
-/* Navbar Container */
+/* Navbar Container - Sticky with Glassmorphism */
 .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 32px;
-  background-color: #ffffff;
-  border-bottom: 1px solid #eef2f6;
-  font-family: 'Assistant', 'Rubik', system-ui, sans-serif;
-  direction: rtl; /* Right to Left flow */
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  padding: var(--navbar-padding);
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--navbar-border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  transition: all 0.3s ease;
 }
 
-/* RIGHT SIDE: Logo */
+/* RIGHT SIDE: Logo & Branding */
 .navbar-right {
   display: flex;
   align-items: center;
@@ -21,25 +25,29 @@
 .logo-text {
   display: flex;
   flex-direction: column;
-  text-align: right;
 }
 
 .logo-title {
   font-size: 1.15rem;
-  font-weight: 700;
-  color: #1e293b;
-  line-height: 1.2;
+  font-weight: 800;
+  color: var(--navbar-logo-title);
+  line-height: 1.25;
 }
 
 .logo-subtitle {
   font-size: 0.75rem;
-  font-weight: 500;
-  color: #94a3b8;
+  font-weight: 600;
+  color: var(--navbar-logo-subtitle);
 }
 
 .logo-icon-container {
   display: flex;
   align-items: center;
+  transition: transform 0.2s ease;
+}
+
+.logo-icon-container:hover {
+  transform: scale(1.05);
 }
 
 /* CENTER: Navigation Links */
@@ -58,31 +66,36 @@
   align-items: center;
   gap: 8px;
   text-decoration: none;
-  padding: 8px 16px;
+  padding: var(--nav-item-padding);
   border-radius: 9999px; /* Rounded pill shape */
-  color: #64748b;
-  font-weight: 500;
+  color: var(--navbar-item-color);
+  font-weight: 600;
   font-size: 0.95rem;
-  transition: all 0.2s ease-in-out;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid transparent;
 }
 
 /* Hover State */
 .nav-item:hover {
-  color: #1e40af;
-  background-color: #f8fafc;
+  color: var(--navbar-item-hover);
+  background-color: var(--navbar-item-hover-bg);
 }
 
 /* Active State (The Blue Pill) */
 .nav-item.active {
-  background-color: #eff6ff; /* Soft light blue */
-  border-color: #bfdbfe; /* Subtle blue outline */
-  color: #1d4ed8; /* Strong primary blue text */
+  background-color: var(--navbar-item-active-bg);
+  border-color: var(--navbar-item-active-border);
+  color: var(--navbar-item-active-color);
 }
 
 /* Navigation Icons */
 .nav-icon {
   stroke: currentColor;
+  transition: transform 0.2s ease;
+}
+
+.nav-item:hover .nav-icon {
+  transform: translateY(-1px);
 }
 
 /* Badge container for "My Requests" */
@@ -95,17 +108,18 @@
 
 /* Orange circular badge on "My Requests" */
 .requests-badge {
-  background-color: #f97316; /* Orange */
-  color: white;
+  background-color: var(--badge-bg);
+  color: var(--badge-color);
   font-size: 0.7rem;
-  font-weight: bold;
-  min-width: 16px;
-  height: 16px;
+  font-weight: 800;
+  min-width: 18px;
+  height: 18px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 2px;
+  box-shadow: 0 2px 4px rgba(249, 115, 22, 0.2);
 }
 
 /* LEFT SIDE: Avatar & Notification Bell */
@@ -119,13 +133,15 @@
 .notification-bell {
   position: relative;
   cursor: pointer;
-  color: #64748b;
+  color: var(--navbar-item-color);
   display: flex;
   align-items: center;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .notification-bell:hover {
-  color: #1e293b;
+  color: var(--navbar-logo-title);
+  transform: scale(1.05);
 }
 
 .bell-badge {
@@ -134,22 +150,29 @@
   right: 0;
   width: 8px;
   height: 8px;
-  background-color: #f97316; /* Orange Dot */
+  background-color: var(--badge-bg);
   border-radius: 50%;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--navbar-bg);
 }
 
 /* Solid Blue Profile Initial Avatar */
 .profile-circle {
   width: 36px;
   height: 36px;
-  background-color: #1e3a8a; /* Dark Navy Blue */
-  color: #ffffff;
+  background-color: var(--avatar-bg);
+  color: var(--avatar-color);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  font-size: 1rem;
+  font-weight: 700;
+  font-size: 0.95rem;
   cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(30, 58, 138, 0.15);
+}
+
+.profile-circle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.25);
 }

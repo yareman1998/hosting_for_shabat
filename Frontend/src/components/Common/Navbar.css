@@ -1,0 +1,155 @@
+/* Navbar Container */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 32px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #eef2f6;
+  font-family: 'Assistant', 'Rubik', system-ui, sans-serif;
+  direction: rtl; /* Right to Left flow */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+/* RIGHT SIDE: Logo */
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+}
+
+.logo-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+.logo-subtitle {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.logo-icon-container {
+  display: flex;
+  align-items: center;
+}
+
+/* CENTER: Navigation Links */
+.navbar-links {
+  display: flex;
+  list-style: none;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+}
+
+/* Nav Link Item (Base State) */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 9999px; /* Rounded pill shape */
+  color: #64748b;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.2s ease-in-out;
+  border: 1px solid transparent;
+}
+
+/* Hover State */
+.nav-item:hover {
+  color: #1e40af;
+  background-color: #f8fafc;
+}
+
+/* Active State (The Blue Pill) */
+.nav-item.active {
+  background-color: #eff6ff; /* Soft light blue */
+  border-color: #bfdbfe; /* Subtle blue outline */
+  color: #1d4ed8; /* Strong primary blue text */
+}
+
+/* Navigation Icons */
+.nav-icon {
+  stroke: currentColor;
+}
+
+/* Badge container for "My Requests" */
+.nav-item-badge-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+/* Orange circular badge on "My Requests" */
+.requests-badge {
+  background-color: #f97316; /* Orange */
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+}
+
+/* LEFT SIDE: Avatar & Notification Bell */
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Notification Bell with Badge */
+.notification-bell {
+  position: relative;
+  cursor: pointer;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+}
+
+.notification-bell:hover {
+  color: #1e293b;
+}
+
+.bell-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  background-color: #f97316; /* Orange Dot */
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+}
+
+/* Solid Blue Profile Initial Avatar */
+.profile-circle {
+  width: 36px;
+  height: 36px;
+  background-color: #1e3a8a; /* Dark Navy Blue */
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+}

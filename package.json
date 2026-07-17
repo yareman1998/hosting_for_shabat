@@ -1,5 +1,26 @@
 {
-  "dependencies": {
-    "axios": "^1.18.1"
+  "name": "hosting_for_shabat",
+  "version": "1.0.0",
+  "description": "A platform connecting hosts and guests (soldiers, national service volunteers, students, and families) for Shabbat hosting. The application combines rigid factual search filters with semantic vector matches, a multi-stage AI Agent for expectation alignment, and real-time in-app chat.",
+  "main": "index.js",
+  "scripts": {
+    "dev:frontend": "npm run dev --prefix Frontend",
+    "dev:backend": "uv --directory Backend run uvicorn app.main:app --reload",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yareman1998/hosting_for_shabat.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/yareman1998/hosting_for_shabat/issues"
+  },
+  "homepage": "https://github.com/yareman1998/hosting_for_shabat#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.3"
   }
 }

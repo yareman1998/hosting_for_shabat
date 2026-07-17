@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.database.models.user import User, UserType
 from app.database.session import get_db
 from app.features.admin.schemas import AdminUserResponse
-from app.features.auth.router import get_current_user
+from app.features.auth.services import get_current_user
 
 router = APIRouter(prefix="/admin", tags=["Admin Operations"])
 

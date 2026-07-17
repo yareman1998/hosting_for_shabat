@@ -2,12 +2,11 @@ import uuid
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
 from app.database.session import get_db
 from app.database.models.user import User, UserType
 from app.database.models.listing import HostListing
 from app.database.models.profile import HostProfile, KashrutLevel
-from app.features.auth.router import get_current_user
+from app.features.auth.services import get_current_user
 from app.features.listings.schemas import HostListingCreate, HostListingResponse
 
 router = APIRouter(prefix="/listings", tags=["Host Listings"])
@@ -76,7 +75,6 @@ def delete_listing(
     db.commit()
     return {"message": "Listing deleted successfully"}
 
-# Adding search back into listings domain which fits search of hosts / listings
 @router.get("/search")
 def search_hosts(
     city: Optional[str] = None,
@@ -101,9 +99,7 @@ def search_hosts(
     for profile in results:
         match_score = None
         if guest_vector and profile.atmosphere_vector:
-            # Since vectors are normalized to unit length, cosine similarity is the dot product
             similarity = sum(x * y for x, y in zip(guest_vector, profile.atmosphere_vector))
-            # Convert range [-1, 1] to match percentage [0, 100]
             match_score = int(round(((similarity + 1) / 2) * 100))
 
         output.append({

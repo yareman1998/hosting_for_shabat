@@ -34,7 +34,6 @@ class HostProfile(Base):
     )
     religious_orientation: Mapped[Optional[str]]
     availability_windows: Mapped[Optional[str]]
-    # 1536-dim vector for semantic atmosphere matching
     atmosphere_vector: Mapped[Optional[List[float]]] = mapped_column(
         Vector(1536), nullable=True
     )
@@ -83,7 +82,6 @@ class GuestProfile(Base):
         DateTime(timezone=True), nullable=True
     )
     origin_city: Mapped[Optional[str]]
-    # 1536-dim vector for semantic preference matching
     preference_vector: Mapped[Optional[List[float]]] = mapped_column(
         Vector(1536), nullable=True
     )

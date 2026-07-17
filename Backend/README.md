@@ -1,6 +1,6 @@
 # Hosting for Shabbat - Backend API
 
-This is the backend service for the **Hosting for Shabbat** platform, built using Python, FastAPI, SQLAlchemy ORM, and PostgreSQL.
+This is the backend service for the **Hosting for Shabbat** platform, built using Python, FastAPI, SQLAlchemy ORM, PostgreSQL, and LangGraph.
 
 ## Architecture
 
@@ -16,10 +16,29 @@ app/
 │   ├── listings/             # Host listings creation and host discovery search
 │   ├── posts/                # Guest posts board and reverse-auction claiming
 │   ├── bookings/             # Direct booking requests, approvals, WhatsApp & Icebreaker generation
-│   └── panic/                # Emergency panic button system (Thursday 16:00 lock)
+│   └── admin/                # Admin management panel
 ├── agent/                    # AI Agent helper services (embeddings, icebreaker generation)
 └── main.py                   # Main FastAPI entry point
 ```
+
+---
+
+## AI Agent Integration (Shabbat Icebreakers)
+
+The platform features a state-of-the-art, multi-stage AI Agent built using **LangGraph** to generate personalized icebreaker questions for matched hosts and guests. The goal of these questions is to ease social friction and coordinate practical expectations before Shabbat.
+
+### 4-Node Agent Workflow
+1. **Commonality Analysis (`analyze_commonalities`):** Compares the host's profile details (city, kashrut level, religious orientation, household notes) with the guest's profile preferences (soldier status, dietary constraints, give-and-take skills, matching description) to write a concise compatibility analysis highlighting shared interests and potential areas requiring coordination.
+2. **Questions Generation (`generate_questions`):** Takes the analyzed commonalities and profiles to generate 3 polite, open-ended, and highly personalized icebreaker questions.
+3. **Quality Guardrails (`guardrails`):** Reviews the generated questions to ensure they respect Shabbat traditions and holiness, are friendly, and do not cross personal boundaries.
+4. **Parsing & Formatting (`parse_validate`):** Sanitizes list formatting, cleans markdown characters, and parses the final text into a clean Python array of strings with a robust default fallback.
+
+### Tracing & Self-Healing Routing
+* **LangSmith Tracing:** The graph integrates with **LangSmith** for automatic execution tracing, token consumption logging, latency auditing, and run monitoring.
+* **Auto-Routing Wrapper:** Hugging Face serverless APIs deprecated legacy endpoints. The system uses a custom `HFInferenceAPILLM` LangChain component that targets the OpenAI-compatible HF Router (`https://router.huggingface.co/v1`).
+* **Transparent Mapping:** If the legacy gated model (`meta-llama/Meta-Llama-3-8B-Instruct`) is configured in the environment, the system automatically redirects requests to the active serverless endpoint (`meta-llama/Llama-3.1-8B-Instruct:deepinfra`), keeping the client fully functional without requiring manual configuration updates.
+
+---
 
 ## Features & API Routes
 
@@ -45,10 +64,11 @@ app/
 * `POST /api/bookings/request` - Requests accommodation from a guest to a host profile.
 * `GET /api/bookings/incoming` - Returns pending booking requests awaiting the host's approval.
 * `PATCH /api/bookings/{match_id}/respond` - Accepts or rejects a pending booking request.
-* `GET /api/matches/{match_id}/details` - Retrieves detailed information about an active match, including a pre-filled click-to-chat WhatsApp link and custom AI icebreaker questions.
+* `GET /api/matches/{match_id}/details` - Retrieves detailed information about an active match, including a pre-filled click-to-chat WhatsApp link and custom AI icebreaker questions from the LangGraph agent.
+### 💬 In-App Chat (`/api/matches`)
+* `GET /api/matches/{match_id}/messages` - Retrieves chat message history for a booking match, sorted chronologically.
+* `WS /api/matches/{match_id}/chat/ws` - WebSocket endpoint for bidirectional real-time messaging between host and guest. Authenticates via JWT token query param and saves messages in the database.
 
-### 🚨 Emergency Panic Button (`/api/panic-button`)
-* `POST /api/panic-button/activate` - Activates last-minute emergency response to return nearby available-for-emergency hosts. Restricts activation to after Thursday 16:00 by default.
 
 ---
 
@@ -74,7 +94,12 @@ app/
    
    # HuggingFace Configuration (for semantic vector search)
    HF_ACCESS_TOKEN=your_huggingface_access_token
-   HF_MODEL=sentence-transformers/all-MiniLM-L6-v2
+   HF_MODEL=meta-llama/Meta-Llama-3-8B-Instruct
+   
+   # LangSmith Monitoring / Tracing (Optional)
+   LANGCHAIN_TRACING_V2=true
+   LANGCHAIN_API_KEY=your_langsmith_api_key_here
+   LANGCHAIN_PROJECT=hosting-for-shabat
    ```
 3. Run migrations to initialize the database:
    ```bash

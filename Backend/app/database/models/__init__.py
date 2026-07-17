@@ -4,6 +4,7 @@ from app.database.models.profile import HostProfile, GuestProfile, KashrutLevel
 from app.database.models.listing import HostListing
 from app.database.models.post import GuestPost, PostStatus
 from app.database.models.match import Match, MatchStatus
+from app.database.models.message import Message
 
 __all__ = [
     "Base",
@@ -17,4 +18,5 @@ __all__ = [
     "PostStatus",
     "Match",
     "MatchStatus",
+    "Message",
 ]

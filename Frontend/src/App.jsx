@@ -1,59 +1,59 @@
-import { useState, useEffect } from 'react'
-import axios from 'axios'
-import Navbar from './components/Navbar'
+import { useState } from 'react'
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
+import Layout from './components/Common/Layout'
+import Login from './pages/Login/Login'
+
+// Placeholder page components (Swap these out later for your real pages!)
+const HomePage = () => <div><h1>דף הבית - ברוכים הבאים!</h1></div>;
+const FindHost = () => <div><h1>מצא מארח לשבת</h1></div>;
+const MyRequests = () => <div><h1>לוח הבקשות שלי</h1></div>;
+const RequestsBoard = () => <div><h1>לוח בקשות אירוח לחיילים</h1></div>;
+const ProfilePage = () => <div><h1>הפרופיל שלי</h1></div>;
+const NotFound = () => <div><h1>העמוד לא נמצא (404)</h1></div>;
 
 export default function App() {
-  const [todos, setTodos] = useState([])
-  
-  // 1. Initialize userRole as null (it will be set once we fetch it from the backend)
-  const [userRole, setUserRole] = useState(null) 
-  const [loading, setLoading] = useState(true)
+  // Control authorization state ('guest', 'host', or null)
+  const [userRole, setUserRole] = useState('guest') 
 
-  useEffect(() => {
-    async function initApp() {
-      try {
-        // 2. Fetch the todos (your existing backend call)
-        const todosResponse = await axios.get('http://localhost:8000/todos')
-        if (todosResponse.data) {
-          setTodos(todosResponse.data)
+  const router = createBrowserRouter([
+    {
+      path: '/',
+      element: <Layout userRole={userRole} />,
+      errorElement: <NotFound />,
+      children: [
+        {
+          index: true,
+          element: <HomePage />
+        },
+        {
+          path: 'profile',
+          element: <ProfilePage />
+        },
+        // Guest Protected Routes
+        {
+          path: 'find-host',
+          element: userRole === 'guest' ? <FindHost /> : <Navigate to="/" replace />
+        },
+        {
+          path: 'my-requests',
+          element: userRole === 'guest' ? <MyRequests /> : <Navigate to="/" replace />
+        },
+        // Host Protected Routes
+        {
+          path: 'requests-board',
+          element: userRole === 'host' ? <RequestsBoard /> : <Navigate to="/" replace />
         }
-
-        // 3. Fetch the logged-in user's profile/role from your FastAPI backend
-        // Note: If you are using JWT tokens, you would pass it in the headers like this:
-        // const token = localStorage.getItem('token')
-        const profileResponse = await axios.get('http://localhost:8000/api/user/profile', {
-          // headers: { Authorization: `Bearer ${token}` }
-        })
-        
-        if (profileResponse.data && profileResponse.data.role) {
-          setUserRole(profileResponse.data.role) // Sets 'host' or 'guest'
-        }
-      } catch (error) {
-        console.error("Error initializing app data:", error)
-      } finally {
-        setLoading(false) // Stop showing loading screen once calls are done
-      }
+      ]
+    },
+    {
+      path: '/login',
+      element: userRole ? <Navigate to="/" replace /> : <Login />
+    },
+    {
+      path: '*',
+      element: <NotFound />
     }
+  ])
 
-    initApp()
-  }, [])
-
-  // 4. Show a clean loading state while fetching the user's role
-  if (loading) {
-    return <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>Loading...</div>
-  }
-
-  return (
-    <div>
-      {/* 5. The Navbar component now uses the real role fetched from your database */}
-      <Navbar userRole={userRole} />
-
-      {/* Your existing list */}
-      <ul>
-        {todos.map((todo) => (
-          <li key={todo.id}>{todo.name}</li>
-        ))}
-      </ul>
-    </div>
-  )
+  return <RouterProvider router={router} />
 }

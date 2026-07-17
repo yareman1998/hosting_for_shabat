@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { ShieldIcon } from '../../components/Common/Icons';
 import './Login.css';
 
 export default function Login({ onLoginSuccess }) {
@@ -54,9 +55,7 @@ export default function Login({ onLoginSuccess }) {
       <div className="login-card">
         <div className="login-logo-section">
           {/* Blue Shield Icon (Matches your navbar logo) */}
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="#1d4ed8" className="login-shield-icon">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
+          <ShieldIcon size={48} className="login-shield-icon" />
           <h2>שבת שלום</h2>
           <p>התחברות למערכת אירוח חיילים</p>
         </div>

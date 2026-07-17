@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import api from '../api/axiosConfig';
+import { useState, useEffect } from 'react';
+import api from '../../api/axiosConfig';
 
 const GuestList = () => {
   const [guests, setGuests] = useState([]);

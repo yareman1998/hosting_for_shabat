@@ -1,0 +1,5 @@
+.find-host-page {
+  padding: var(--layout-padding) 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+}

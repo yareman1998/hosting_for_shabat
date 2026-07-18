@@ -1,13 +1,12 @@
 import uuid
-from datetime import datetime
-from typing import Optional, Any
 import re
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, computed_field
 from app.database.models.profile import KashrutLevel
 from app.database.models.user import UserType
 
 def normalize_israeli_phone_number(v: str) -> str:
-    """Normalize and validate an Israeli mobile phone number to E.164 format."""
     cleaned = re.sub(r"[\s\-\(\)]", "", v)
     pattern = r"^(05\d{8}|\+9725\d{8}|9725\d{8})$"
     if not re.match(pattern, cleaned):
@@ -22,7 +21,7 @@ class UserBase(BaseModel):
     email: EmailStr
     full_name: str
     phone_number: str
-    user_type: str
+    user_type: UserType
     biography: Optional[str] = None
 
     @field_validator("phone_number")
@@ -36,12 +35,8 @@ class UserCreate(UserBase):
     @field_validator("password")
     @classmethod
     def validate_password(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters long")
-        if not re.search(r"[A-Z]", v):
-            raise ValueError("Password must contain at least one uppercase letter (A-Z)")
-        if not re.search(r"\d", v):
-            raise ValueError("Password must contain at least one digit (0-9)")
+        if len(v) < 8 or not re.search(r"[A-Z]", v) or not re.search(r"\d", v):
+            raise ValueError("Password must be >= 8 chars, contain an uppercase letter and a digit")
         return v
         
 class UserResponse(UserBase):
@@ -63,11 +58,6 @@ class HostProfileBase(BaseModel):
     accessibility: Optional[str] = None
     free_text_notes: Optional[str] = None
 
-class HostProfileResponse(HostProfileBase):
-    model_config = ConfigDict(from_attributes=True)
-    id: uuid.UUID
-    user_id: uuid.UUID
-
 class GuestProfileBase(BaseModel):
     is_soldier_or_national_service: bool = False
     skills_give_take: Optional[str] = None
@@ -77,11 +67,6 @@ class GuestProfileBase(BaseModel):
     food_preferences_allergies: Optional[str] = None
     release_date: Optional[datetime] = None
     origin_city: Optional[str] = None
-
-class GuestProfileResponse(GuestProfileBase):
-    model_config = ConfigDict(from_attributes=True)
-    id: uuid.UUID
-    user_id: uuid.UUID
 
 class LoginRequest(BaseModel):
     username: str
@@ -98,37 +83,11 @@ class VerifyPhoneRequest(BaseModel):
     @field_validator("phone_number")
     @classmethod
     def normalize_phone(cls, v: str) -> str:
-        """Normalize to E.164 so the router can query directly."""
         return normalize_israeli_phone_number(v)
-
-class ProfileResponse(BaseModel):
-    """Unified read schema for both host and guest profile data on /me."""
-    model_config = ConfigDict(from_attributes=True)
-    id: str
-    city: Optional[str] = None
-    neighborhood: Optional[str] = None
-    kashrut_level: Optional[str] = None
-    religious_orientation: Optional[str] = None
-    availability_windows: Optional[Any] = None
-    emergency_available: Optional[bool] = None
-    full_address: Optional[str] = None
-    max_guests: Optional[int] = None
-    num_bedrooms: Optional[int] = None
-    has_pets: Optional[bool] = None
-    accessibility: Optional[str] = None
-    free_text_notes: Optional[str] = None
-    is_soldier_or_national_service: Optional[bool] = None
-    skills_give_take: Optional[Any] = None
-    is_anonymous: Optional[bool] = None
-    service_type: Optional[str] = None
-    unit_name: Optional[str] = None
-    food_preferences_allergies: Optional[str] = None
-    release_date: Optional[datetime] = None
-    origin_city: Optional[str] = None
 
 class UserMeResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: str
+    id: uuid.UUID
     email: EmailStr
     phone_number: str
     full_name: str
@@ -136,4 +95,11 @@ class UserMeResponse(BaseModel):
     biography: Optional[str] = None
     is_email_verified: bool
     is_phone_verified: bool
-    profile: Optional[ProfileResponse] = None
+
+    @computed_field
+    @property
+    def profile(self) -> Optional[dict]:
+        p = self.host_profile if self.user_type == UserType.HOST else self.guest_profile
+        if not p:
+            return None
+        return {k: v for k, v in p.__dict__.items() if not k.startswith('_')}

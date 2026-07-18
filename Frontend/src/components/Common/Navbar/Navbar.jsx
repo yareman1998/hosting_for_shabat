@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { HomeIcon, FindHostIcon, MyRequestsIcon, RequestsBoardIcon, ProfileIcon, ShieldIcon, BellIcon } from '../Icons';
+import { HomeIcon, FindHostIcon, MyRequestsIcon, RequestsBoardIcon, ProfileIcon, Logo, BellIcon, AdminIcon } from '../Icons';
 import './Navbar.css';
 
 export default function Navbar({ userRole }) {
@@ -9,7 +9,7 @@ export default function Navbar({ userRole }) {
     {
       path: '/',
       label: 'בית',
-      roles: ['guest', 'host'],
+      roles: ['guest', 'host', 'admin'],
       icon: <HomeIcon className="nav-icon" />
     },
     {
@@ -32,9 +32,15 @@ export default function Navbar({ userRole }) {
       icon: <RequestsBoardIcon className="nav-icon" />
     },
     {
+      path: '/admin',
+      label: 'ניהול מערכת',
+      roles: ['admin'],
+      icon: <AdminIcon className="nav-icon" />
+    },
+    {
       path: '/profile',
       label: 'פרופיל',
-      roles: ['guest', 'host'],
+      roles: ['guest', 'host', 'admin'],
       icon: <ProfileIcon className="nav-icon" />
     }
   ];
@@ -60,12 +66,31 @@ export default function Navbar({ userRole }) {
     ));
   }
 
+  // Generate initials for avatar circle based on full_name or email in local storage
+  const getInitials = () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const userObj = JSON.parse(userStr);
+        if (userObj.full_name) {
+          return userObj.full_name.trim().charAt(0);
+        }
+        if (userObj.email) {
+          return userObj.email.trim().charAt(0).toUpperCase();
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return 'מ'; // מ - עבור משתמש כברירת מחדל
+  };
+
   return (
     <nav className="navbar">
       {/* BRANDING/LOGO */}
       <div className="navbar-right">
         <div className="logo-icon-container">
-          <ShieldIcon size={32} className="shield-icon" />
+          <Logo size={32} className="logo-icon" />
         </div>
         <div className="logo-text">
           <span className="logo-title">שבת שלום</span>
@@ -84,9 +109,8 @@ export default function Navbar({ userRole }) {
           <BellIcon className="" />
           <span className="bell-badge"></span>
         </div>
-        <div className="profile-circle">ע</div>
+        <div className="profile-circle">{getInitials()}</div>
       </div>
     </nav>
   );
 }
-

@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { ShieldIcon } from '../../components/Common/Icons';
+import { authApi } from '../../api/api';
+import { Logo, MailIcon, LockIcon, EyeIcon, EyeOffIcon } from '../../components/Common/Icons';
 import './Login.css';
 
 export default function Login({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -17,27 +18,19 @@ export default function Login({ onLoginSuccess }) {
     setLoading(true);
 
     try {
-      // 1. Send authentication request to your FastAPI backend
-      // Adjust this URL to match your backend's login endpoint
-      const response = await axios.post('http://localhost:8000/api/auth/login', {
-        email: email,
+      // Send authentication request using central authApi
+      await authApi.login({
+        username: email,
         password: password,
       });
 
-      // 2. Save the access token securely in the browser
-      if (response.data && response.data.access_token) {
-        localStorage.setItem('token', response.data.access_token);
-        
-        // 3. Callback to app.jsx to let it know to refetch the logged-in user profile
-        if (onLoginSuccess) {
-          await onLoginSuccess();
-        }
-
-        // 4. Redirect the user back to the main page
-        navigate('/');
-      } else {
-        setError('שגיאה בקבלת מפתח התחברות מהשרת.');
+      // Callback to App.jsx to update authentication state
+      if (onLoginSuccess) {
+        onLoginSuccess();
       }
+
+      // Redirect the user back to the main page
+      navigate('/');
     } catch (err) {
       console.error("Login failed:", err);
       if (err.response && err.response.data && err.response.data.detail) {
@@ -54,48 +47,71 @@ export default function Login({ onLoginSuccess }) {
     <div className="login-container">
       <div className="login-card">
         <div className="login-logo-section">
-          {/* Blue Shield Icon (Matches your navbar logo) */}
-          <ShieldIcon size={48} className="login-shield-icon" />
+          {/* Logo */}
+          <Logo size={76} className="login-logo" />
           <h2>שבת שלום</h2>
-          <p>התחברות למערכת אירוח חיילים</p>
+          <p className="login-subtitle">אירוח חיילים לשבת</p>
+        </div>
+
+        {/* Tab Toggle Bar */}
+        <div className="login-tabs-container">
+          <button type="button" className="login-tab active">
+            התחברות
+          </button>
+          <button type="button" className="login-tab" onClick={() => navigate('/signup')}>
+            הרשמה
+          </button>
         </div>
 
         {error && <div className="login-error-message">{error}</div>}
 
         <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
-            <label htmlFor="email">כתובת אימייל</label>
-            <input
-              type="email"
-              id="email"
-              required
-              placeholder="name@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+          {/* Email or Phone Field */}
+          <div className="form-group-clean">
+            <div className="input-icon-wrapper">
+              <input
+                type="text"
+                required
+                placeholder="אימייל או טלפון"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="clean-input"
+              />
+              <MailIcon size={18} className="inner-input-icon" />
+            </div>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="password">סיסמה</label>
-            <input
-              type="password"
-              id="password"
-              required
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+          {/* Password Field */}
+          <div className="form-group-clean">
+            <div className="input-icon-wrapper">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                placeholder="סיסמה"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="clean-input"
+              />
+              <LockIcon size={18} className="inner-input-icon" />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="password-toggle-btn"
+                tabIndex="-1"
+              >
+                {showPassword ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
+              </button>
+            </div>
           </div>
 
           <button type="submit" className="login-submit-btn" disabled={loading}>
             {loading ? 'מתחבר...' : 'התחבר'}
           </button>
         </form>
+      </div>
 
-        <div className="login-footer">
-          <span>אין לך חשבון עדיין? </span>
-          <span className="signup-link" onClick={() => navigate('/signup')}>הרשם כאן</span>
-        </div>
+      <div className="login-outside-footer">
+        בהתחברות אתה מסכים לתנאי השימוש ומדיניות הפרטיות
       </div>
     </div>
   );

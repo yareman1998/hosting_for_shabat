@@ -96,20 +96,21 @@ class UserMeResponse(BaseModel):
     is_email_verified: bool = False
     is_phone_verified: bool = False
     
-    # 1. Declared profile as a standard optional field
     profile: Optional[dict] = None
 
-    # 2. Extract profile details safely from the DB record before serialization
     @model_validator(mode="before")
     @classmethod
     def extract_profile_data(cls, data):
-        # Check if we are handling a SQLAlchemy ORM model instance
-        if not isinstance(data, dict):
+        if not isinstance(data, dict) and hasattr(data, "__dict__"):
             u_type = getattr(data, "user_type", None)
             p = getattr(data, "host_profile", None) if u_type == UserType.HOST else getattr(data, "guest_profile", None)
+
+            data_dict = {k: v for k, v in data.__dict__.items() if not k.startswith('_')}
             
             if p and hasattr(p, "__dict__"):
-                profile_dict = {k: v for k, v in p.__dict__.items() if not k.startswith('_')}
-                # Attach it dynamically so Pydantic maps it to the 'profile' field
-                setattr(data, "profile", profile_dict)
+                data_dict["profile"] = {k: v for k, v in p.__dict__.items() if not k.startswith('_')}
+            else:
+                data_dict["profile"] = None
+                
+            return data_dict
         return data

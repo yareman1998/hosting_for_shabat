@@ -7,7 +7,7 @@ export default function SignUp() {
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -35,7 +35,7 @@ export default function SignUp() {
   // Pre-validates the fields to perfectly align with your backend Pydantic checks
   const validateClientSide = () => {
     const { password } = formData;
-    
+
     if (password.length < 8) {
       setError('הסיסמה חייבת להכיל 8 תווים לפחות.');
       return false;
@@ -61,10 +61,10 @@ export default function SignUp() {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:8000/api/auth/signup', formData, {
+      const response = await axios.post('http://localhost:8000/api/auth/register', formData, {
         headers: { 'Content-Type': 'application/json' }
       });
-      
+
       if (response.status === 201 || response.status === 200) {
         navigate('/login');
       }

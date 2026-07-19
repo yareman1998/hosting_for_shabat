@@ -3,13 +3,13 @@ import { HomeIcon, FindHostIcon, MyRequestsIcon, RequestsBoardIcon, ProfileIcon,
 import './Navbar.css';
 
 export default function Navbar({ userRole }) {
-  
+
   // 1. Array containing link data, paths, labels, and icons
   const linksConfig = [
     {
       path: '/',
       label: 'בית',
-      roles: ['guest', 'host', 'admin'],
+      roles: ['guest', 'host'],
       icon: <HomeIcon className="nav-icon" />
     },
     {
@@ -52,8 +52,8 @@ export default function Navbar({ userRole }) {
   function roots() {
     return allowedLinks.map((link) => (
       <li key={link.path}>
-        <NavLink 
-          to={link.path} 
+        <NavLink
+          to={link.path}
           className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}
         >
           <div className={link.hasBadge ? "nav-item-badge-wrapper" : ""}>

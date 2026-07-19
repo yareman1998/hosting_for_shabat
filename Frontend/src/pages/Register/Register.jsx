@@ -67,7 +67,8 @@ export default function SignUp() {
         email: formData.email,
         password: formData.password,
         full_name: formData.full_name,
-        user_type: formData.user_type
+        user_type: formData.user_type,
+        phone_number: formData.phone_number
       };
 
       // 2. Send registrationPayload instead of the full formData object

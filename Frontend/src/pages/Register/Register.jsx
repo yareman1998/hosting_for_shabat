@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import './SignUp.css';
+import './Register.css';
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -13,7 +13,8 @@ export default function SignUp() {
     email: '',
     phone_number: '',
     password: '',
-    user_type: 'guest'
+    user_type: 'guest',
+    biography: ''
   });
 
   const fieldsConfig = [
@@ -61,7 +62,17 @@ export default function SignUp() {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:8000/api/auth/register', formData, {
+      // 1. Create a filtered payload containing only what the base schema expects
+      const registrationPayload = {
+        email: formData.email,
+        password: formData.password,
+        full_name: formData.full_name,
+        user_type: formData.user_type,
+        phone_number: formData.phone_number
+      };
+
+      // 2. Send registrationPayload instead of the full formData object
+      const response = await axios.post('http://localhost:8000/api/auth/register', registrationPayload, {
         headers: { 'Content-Type': 'application/json' }
       });
 

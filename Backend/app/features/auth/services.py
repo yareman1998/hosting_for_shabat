@@ -26,7 +26,10 @@ def hash_password(password: str) -> str:
     return hashed.decode('utf-8')
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return _pwd_context.verify(plain, hashed)
+    try:
+        return bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8'))
+    except Exception:
+        return False
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     payload = {
@@ -34,6 +37,11 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         "exp": datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)),
     }
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+
+
+# --- Added this missing line here so get_current_user can find it ---
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)
+
 
 def get_current_user(token: Optional[str] = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     """Validate token and eager-load profiles to prevent N+1 queries."""

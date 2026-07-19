@@ -1,0 +1,110 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import './Login.css';
+
+export default function Login({ onLoginSuccess }) {
+  const [formData, setFormData] = useState({ username: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const fieldsConfig = [
+    {
+      id: 'username', 
+      label: 'כתובת אימייל',
+      type: 'email',
+      placeholder: 'name@example.com',
+    },
+    {
+      id: 'password',
+      label: 'סיסמה',
+      type: 'password',
+      placeholder: '••••••••',
+    }
+  ];
+
+  const handleChange = (e) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      // Sends payload matching class loginRequest(BaseModel)
+      const response = await axios.post('http://localhost:8000/api/auth/login', formData, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (response.data && response.data.access_token) {
+        localStorage.setItem('token', response.data.access_token);
+        
+        if (onLoginSuccess) {
+          await onLoginSuccess();
+        }
+        
+        navigate('/');
+      } else {
+        setError('שגיאה בקבלת מפתח התחברות מהשרת.');
+      }
+    } catch (err) {
+      console.error("Login request failed:", err);
+      if (err.response && err.response.data && err.response.data.detail) {
+        setError(err.response.data.detail);
+      } else {
+        setError('כתובת אימייל או סיסמה שגויים. אנא נסה שוב.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  function renderFields() {
+    return fieldsConfig.map((field) => (
+      <div className="form-group" key={field.id}>
+        <label htmlFor={field.id}>{field.label}</label>
+        <input
+          type={field.type}
+          id={field.id}
+          required
+          placeholder={field.placeholder}
+          value={formData[field.id]}
+          onChange={handleChange}
+        />
+      </div>
+    ));
+  }
+
+  return (
+    <div className="login-container">
+      <div className="login-card">
+        <div className="login-header">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="#1d4ed8" className="login-shield-icon">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          <h2>שבת שלום</h2>
+          <p>מערכת אירוח חיילים בסופי שבוע</p>
+        </div>
+
+        {error && <div className="login-error">{error}</div>}
+
+        <form onSubmit={handleSubmit} className="login-form">
+          {renderFields()}
+
+          <button type="submit" className="login-btn" disabled={loading}>
+            {loading ? 'מתחבר...' : 'התחברות'}
+          </button>
+        </form>
+
+        <div className="login-footer">
+          <span>אין לך חשבון עדיין?</span>
+          <span className="signup-link" onClick={() => navigate('/signup')}>הרשמה כאן</span>
+        </div>
+      </div>
+    </div>
+  );
+}

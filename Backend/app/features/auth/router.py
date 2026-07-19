@@ -35,7 +35,7 @@ def register(user_in: UserCreate, background_tasks: BackgroundTasks, db: Session
 
     new_user = User(
         email=user_in.email, phone_number=user_in.phone_number, full_name=user_in.full_name,
-        hashed_password=hash_password(user_in.password), user_type=UserType(user_in.user_type),
+        hashed_password=hash_password(user_in.password), user_type=UserType(user_in.user_type.lower()),
         biography=user_in.biography, is_email_verified=False, email_verification_code=email_code,
         email_verification_expires_at=expires_at, is_phone_verified=False,
         telegram_verification_code=telegram_code, telegram_verification_expires_at=expires_at,
@@ -65,7 +65,9 @@ def login(login_data: LoginRequest, db: Session = Depends(get_db)):
             "user": {"id": "00000000-0000-0000-0000-000000000000", "email": settings.ADMIN_EMAIL, "full_name": "System Administrator", "user_type": "admin", "is_email_verified": True, "is_phone_verified": True}
         }
 
-    user = db.query(User).filter((User.email == login_data.username) | (User.phone_number == login_data.username)).first()
+    user = db.query(User).filter(
+        (User.email == login_data.username) | (User.phone_number == login_data.username)
+    ).first()
     if not user or not verify_password(login_data.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email/phone or password")
 

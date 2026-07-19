@@ -2,7 +2,7 @@ import uuid
 import re
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, computed_field
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
 from app.database.models.profile import KashrutLevel
 from app.database.models.user import UserType
 
@@ -95,11 +95,21 @@ class UserMeResponse(BaseModel):
     biography: Optional[str] = None
     is_email_verified: bool = False
     is_phone_verified: bool = False
+    
+    # 1. Declared profile as a standard optional field
+    profile: Optional[dict] = None
 
-    @computed_field
-    @property
-    def profile(self) -> Optional[dict]:
-        p = self.host_profile if self.user_type == UserType.HOST else self.guest_profile
-        if not p:
-            return None
-        return {k: v for k, v in p.__dict__.items() if not k.startswith('_')}
+    # 2. Extract profile details safely from the DB record before serialization
+    @model_validator(mode="before")
+    @classmethod
+    def extract_profile_data(cls, data):
+        # Check if we are handling a SQLAlchemy ORM model instance
+        if not isinstance(data, dict):
+            u_type = getattr(data, "user_type", None)
+            p = getattr(data, "host_profile", None) if u_type == UserType.HOST else getattr(data, "guest_profile", None)
+            
+            if p and hasattr(p, "__dict__"):
+                profile_dict = {k: v for k, v in p.__dict__.items() if not k.startswith('_')}
+                # Attach it dynamically so Pydantic maps it to the 'profile' field
+                setattr(data, "profile", profile_dict)
+        return data

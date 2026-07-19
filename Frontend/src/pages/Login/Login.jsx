@@ -4,6 +4,7 @@ import axios from 'axios';
 import './Login.css';
 
 export default function Login({ onLoginSuccess }) {
+  // Reverted key back to 'username' to satisfy the backend schema
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -11,7 +12,7 @@ export default function Login({ onLoginSuccess }) {
 
   const fieldsConfig = [
     {
-      id: 'username', 
+      id: 'username', // Changed back to 'username'
       label: 'כתובת אימייל',
       type: 'email',
       placeholder: 'name@example.com',
@@ -35,7 +36,7 @@ export default function Login({ onLoginSuccess }) {
     setLoading(true);
 
     try {
-      // Sends payload matching class loginRequest(BaseModel)
+      // Sends payload containing { username, password }
       const response = await axios.post('http://localhost:8000/api/auth/login', formData, {
         headers: { 'Content-Type': 'application/json' }
       });
@@ -53,8 +54,18 @@ export default function Login({ onLoginSuccess }) {
       }
     } catch (err) {
       console.error("Login request failed:", err);
+      
       if (err.response && err.response.data && err.response.data.detail) {
-        setError(err.response.data.detail);
+        const detail = err.response.data.detail;
+        
+        if (typeof detail === 'string') {
+          setError(detail);
+        } else if (Array.isArray(detail)) {
+          const parsedErrors = detail.map(errObj => `${errObj.loc[1] || 'קלט'}: ${errObj.msg}`).join(', ');
+          setError(parsedErrors);
+        } else {
+          setError('נתונים לא תקינים נשלחו לשרת.');
+        }
       } else {
         setError('כתובת אימייל או סיסמה שגויים. אנא נסה שוב.');
       }
@@ -102,7 +113,7 @@ export default function Login({ onLoginSuccess }) {
 
         <div className="login-footer">
           <span>אין לך חשבון עדיין?</span>
-          <span className="signup-link" onClick={() => navigate('/signup')}>הרשמה כאן</span>
+          <span className="signup-link" onClick={() => navigate('/register')}>הרשמה כאן</span>
         </div>
       </div>
     </div>

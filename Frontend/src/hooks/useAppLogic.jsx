@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
+import axios from 'axios'
 import Layout from '../components/Common/Layout/Layout'
 import HomePage from '../pages/Home/Home'
 import FindHost from '../pages/FindHost/FindHost'
@@ -7,6 +8,10 @@ import MyRequests from '../pages/MyRequests/MyRequests'
 import RequestsBoard from '../pages/RequestsBoard/RequestsBoard'
 import ProfilePage from '../pages/Profile/Profile'
 import NotFound from '../pages/NotFound/NotFound'
+
+// Auth Views
+import Login from '../pages/Login/Login'
+import Register from '../pages/Register/Register' // Updated from SignUp
 
 // Admin Views
 import AdminLayout from '../pages/Admin/AdminLayout'
@@ -31,6 +36,35 @@ export function useAppLogic() {
     }
     return null;
   });
+
+  // Updates hook state immediately when a user logs in successfully
+  const handleLoginSuccess = async () => {
+    const savedUserStr = localStorage.getItem('user');
+    if (savedUserStr) {
+      try {
+        const savedUser = JSON.parse(savedUserStr);
+        setUserRole(savedUser.user_type || null);
+        return;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const response = await axios.get('http://localhost:8000/api/auth/me', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const userData = response.data;
+        setUserRole(userData.user_type);
+        localStorage.setItem('user', JSON.stringify(userData));
+      } catch (error) {
+        console.error("Failed to fetch user info after login:", error);
+        setUserRole(null);
+      }
+    }
+  };
 
   useEffect(() => {
     const handleLogout = () => {
@@ -104,6 +138,14 @@ export function useAppLogic() {
             ]
           }
         ]
+      },
+      {
+        path: '/login',
+        element: userRole ? <Navigate to="/" replace /> : <Login onLoginSuccess={handleLoginSuccess} />
+      },
+      {
+        path: '/register', // Updated route path from /signup
+        element: userRole ? <Navigate to="/" replace /> : <Register /> // Updated component from SignUp
       },
       {
         path: '*',

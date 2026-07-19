@@ -1,9 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import Layout from '../components/Common/Layout/Layout'
-
-import Login from '../pages/Login/Login'
-import Signup from '../pages/Signup/Signup'
 import HomePage from '../pages/Home/Home'
 import FindHost from '../pages/FindHost/FindHost'
 import MyRequests from '../pages/MyRequests/MyRequests'
@@ -34,18 +31,6 @@ export function useAppLogic() {
     }
     return null;
   });
-
-  const handleLoginSuccess = () => {
-    try {
-      const savedUserStr = localStorage.getItem('user');
-      if (savedUserStr) {
-        const savedUser = JSON.parse(savedUserStr);
-        setUserRole(savedUser.user_type || null);
-      }
-    } catch (e) {
-      console.error('Error handling login success:', e);
-    }
-  };
 
   useEffect(() => {
     const handleLogout = () => {
@@ -119,14 +104,6 @@ export function useAppLogic() {
             ]
           }
         ]
-      },
-      {
-        path: '/login',
-        element: userRole ? <Navigate to="/" replace /> : <Login onLoginSuccess={handleLoginSuccess} />
-      },
-      {
-        path: '/signup',
-        element: userRole ? <Navigate to="/" replace /> : <Signup />
       },
       {
         path: '*',

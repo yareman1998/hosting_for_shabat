@@ -13,7 +13,7 @@ import NotFound from './pages/NotFound/NotFound'
 
 export default function App() {
   // Control authorization state ('guest', 'host', or null)
-  const [userRole, setUserRole] = useState('guest') 
+  const [userRole, setUserRole] = useState(null) 
 
   const router = createBrowserRouter([
     {

@@ -65,7 +65,7 @@ def register(user_in: UserCreate, background_tasks: BackgroundTasks, db: Session
         phone_number=user_in.phone_number,
         full_name=user_in.full_name,
         hashed_password=hash_password(user_in.password),
-        user_type=UserType(user_in.user_type),
+        user_type=UserType(user_in.user_type.lower()),
         biography=user_in.biography,
         is_email_verified=False,
         email_verification_code=email_code,
@@ -111,9 +111,17 @@ def login(login_data: LoginRequest, db: Session = Depends(get_db)):
             },
         }
 
+    search_username = login_data.username
+    if not "@" in search_username:  # אם זה לא מייל, ננסה לנרמל כטלפון
+        try:
+            search_username = normalize_israeli_phone_number(search_username)
+        except ValueError:
+            pass
+        
     user = db.query(User).filter(
-        (User.email == login_data.username) | (User.phone_number == login_data.username)
+        (User.email == login_data.username) | (User.phone_number == search_username)
     ).first()
+
     if not user or not verify_password(login_data.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email/phone or password")
 

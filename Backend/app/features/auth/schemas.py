@@ -134,6 +134,6 @@ class UserMeResponse(BaseModel):
     full_name: str
     user_type: UserType
     biography: Optional[str] = None
-    is_email_verified: bool
-    is_phone_verified: bool
+    is_email_verified: bool = False
+    is_phone_verified: bool = False
     profile: Optional[ProfileResponse] = None

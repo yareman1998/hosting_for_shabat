@@ -59,6 +59,7 @@ export const listingsApi = {
   getMyListings: () => api.get('/listings/my'),
   deleteListing: (id) => api.delete(`/listings/${id}`),
   searchHosts: (params) => api.get('/listings/search', { params }), // city, kashrut_level
+  getKashrutOptions: () => api.get('/listings/kashrut-options'),
 };
 
 // Posts (Guest open boards requests) API
@@ -74,6 +75,16 @@ export const bookingsApi = {
   getIncomingBookings: () => api.get('/bookings/incoming'),
   respondToBooking: (matchId, status) => api.patch(`/bookings/${matchId}/respond`, { status }), // status: "accepted" or "rejected"
   getMatchDetails: (matchId) => api.get(`/matches/${matchId}/details`),
+};
+
+// Admin Management & Moderation API
+export const adminApi = {
+  getStats: () => api.get('/admin/stats'),
+  getUsers: () => api.get('/admin/users'),
+  updateUserStatus: (userId, isActive) => api.patch(`/admin/users/${userId}/status`, { is_active: isActive }),
+  verifyGuest: (userId, isVerified) => api.patch(`/admin/users/${userId}/verify-guest`, { is_soldier_or_national_service: isVerified }),
+  getBookings: () => api.get('/admin/bookings'),
+  deletePost: (postId) => api.delete(`/admin/posts/${postId}`),
 };
 
 export default api;

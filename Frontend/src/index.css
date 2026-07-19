@@ -146,3 +146,8 @@ code {
   color: var(--text-h);
 }
 
+.text-muted {
+  color: var(--text-muted);
+}
+
+

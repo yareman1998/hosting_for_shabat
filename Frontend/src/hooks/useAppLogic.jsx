@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
-import axios from 'axios'
+import { authApi } from '../api/api'
 import Layout from '../components/Common/Layout/Layout'
 import HomePage from '../pages/Home/Home'
 import FindHost from '../pages/FindHost/FindHost'
@@ -11,7 +11,7 @@ import NotFound from '../pages/NotFound/NotFound'
 
 // Auth Views
 import Login from '../pages/Login/Login'
-import Register from '../pages/Register/Register' // Updated from SignUp
+import Register from '../pages/Register/Register'
 
 // Admin Views
 import AdminLayout from '../pages/Admin/AdminLayout'
@@ -21,54 +21,43 @@ import AdminBookings from '../pages/Admin/AdminBookings'
 import AdminListings from '../pages/Admin/AdminListings'
 
 import ProtectedRoute from '../components/Common/ProtectedRoute'
+import Loading from '../components/Common/Loading/Loading'
 
 export function useAppLogic() {
-  // Read user role from localStorage, defaulting to null if not logged in
-  const [userRole, setUserRole] = useState(() => {
-    try {
-      const savedUserStr = localStorage.getItem('user');
-      if (savedUserStr) {
-        const savedUser = JSON.parse(savedUserStr);
-        return savedUser.user_type || null;
-      }
-    } catch (e) {
-      console.error('Error reading user role from localStorage:', e);
-    }
-    return null;
-  });
+  const [userRole, setUserRole] = useState(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // Updates hook state immediately when a user logs in successfully
-  const handleLoginSuccess = async () => {
-    const savedUserStr = localStorage.getItem('user');
-    if (savedUserStr) {
-      try {
-        const savedUser = JSON.parse(savedUserStr);
-        setUserRole(savedUser.user_type || null);
-        return;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
+  // Fetch current user from server using JWT token
+  const refreshUser = useCallback(async () => {
     const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const response = await axios.get('http://localhost:8000/api/auth/me', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const userData = response.data;
-        setUserRole(userData.user_type);
-        localStorage.setItem('user', JSON.stringify(userData));
-      } catch (error) {
-        console.error("Failed to fetch user info after login:", error);
-        setUserRole(null);
-      }
+    if (!token) {
+      setUserRole(null);
+      setLoadingAuth(false);
+      return;
     }
-  };
+    setLoadingAuth(true);
+    try {
+      const response = await authApi.getMe();
+      const userData = response.data;
+      setUserRole(userData.user_type);
+    } catch (error) {
+      console.error("Failed to authenticate user token:", error);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUserRole(null);
+    } finally {
+      setLoadingAuth(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshUser();
+  }, [refreshUser]);
 
   useEffect(() => {
     const handleLogout = () => {
       setUserRole(null);
+      setLoadingAuth(false);
     };
     window.addEventListener('auth-logout', handleLogout);
     return () => {
@@ -76,22 +65,27 @@ export function useAppLogic() {
     };
   }, []);
 
-  // Memoize router configuration to prevent unnecessary recreations unless userRole changes
+  // Updates hook state immediately when a user logs in successfully
+  const handleLoginSuccess = async () => {
+    await refreshUser();
+  };
+
+  // Memoize router configuration to prevent unnecessary recreations unless userRole or loadingAuth changes
   const router = useMemo(() => {
     return createBrowserRouter([
       {
         path: '/',
-        element: <Layout userRole={userRole} />,
+        element: <Layout userRole={userRole} loading={loadingAuth} />,
         errorElement: <NotFound />,
         children: [
           {
             index: true,
-            element: <HomePage />
+            element: userRole === 'admin' ? <Navigate to="/admin" replace /> : <HomePage />
           },
           {
             path: 'profile',
             element: (
-              <ProtectedRoute userRole={userRole}>
+              <ProtectedRoute userRole={userRole} loading={loadingAuth}>
                 <ProfilePage />
               </ProtectedRoute>
             )
@@ -100,7 +94,7 @@ export function useAppLogic() {
           {
             path: 'find-host',
             element: (
-              <ProtectedRoute allowedRoles={['guest']} userRole={userRole}>
+              <ProtectedRoute allowedRoles={['guest']} userRole={userRole} loading={loadingAuth}>
                 <FindHost />
               </ProtectedRoute>
             )
@@ -108,7 +102,7 @@ export function useAppLogic() {
           {
             path: 'my-requests',
             element: (
-              <ProtectedRoute allowedRoles={['guest']} userRole={userRole}>
+              <ProtectedRoute allowedRoles={['guest']} userRole={userRole} loading={loadingAuth}>
                 <MyRequests />
               </ProtectedRoute>
             )
@@ -117,7 +111,7 @@ export function useAppLogic() {
           {
             path: 'requests-board',
             element: (
-              <ProtectedRoute allowedRoles={['host']} userRole={userRole}>
+              <ProtectedRoute allowedRoles={['host']} userRole={userRole} loading={loadingAuth}>
                 <RequestsBoard />
               </ProtectedRoute>
             )
@@ -126,7 +120,7 @@ export function useAppLogic() {
           {
             path: 'admin',
             element: (
-              <ProtectedRoute allowedRoles={['admin']} userRole={userRole}>
+              <ProtectedRoute allowedRoles={['admin']} userRole={userRole} loading={loadingAuth}>
                 <AdminLayout />
               </ProtectedRoute>
             ),
@@ -141,18 +135,30 @@ export function useAppLogic() {
       },
       {
         path: '/login',
-        element: userRole ? <Navigate to="/" replace /> : <Login onLoginSuccess={handleLoginSuccess} />
+        element: loadingAuth ? (
+          <Loading />
+        ) : userRole ? (
+          <Navigate to="/" replace />
+        ) : (
+          <Login onLoginSuccess={handleLoginSuccess} />
+        )
       },
       {
-        path: '/register', // Updated route path from /signup
-        element: userRole ? <Navigate to="/" replace /> : <Register /> // Updated component from SignUp
+        path: '/register',
+        element: loadingAuth ? (
+          <Loading />
+        ) : userRole ? (
+          <Navigate to="/" replace />
+        ) : (
+          <Register />
+        )
       },
       {
         path: '*',
         element: <NotFound />
       }
     ]);
-  }, [userRole]);
+  }, [userRole, loadingAuth]);
 
   return { router };
 }

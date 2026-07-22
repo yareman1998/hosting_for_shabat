@@ -1,0 +1,244 @@
+/* Shared Auth Styles for Login and Register pages */
+
+.auth-container,
+.login-container,
+.signup-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 85vh;
+  padding: 40px 20px;
+  direction: rtl;
+  font-family: 'Assistant', 'Rubik', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-secondary, #f8fafc);
+}
+
+.auth-card,
+.login-card,
+.signup-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 40px 32px;
+  border-radius: 16px;
+  background-color: #ffffff;
+  border: 1px solid #eef2f6;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.auth-header,
+.login-header,
+.signup-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.auth-shield-icon,
+.login-shield-icon,
+.signup-shield-icon {
+  margin-bottom: 12px;
+  filter: drop-shadow(0 2px 4px rgba(29, 78, 216, 0.15));
+}
+
+.auth-header h2,
+.login-header h2,
+.signup-header h2 {
+  margin: 12px 0 4px 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.auth-header p,
+.login-header p,
+.signup-header p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+/* Error message banner */
+.auth-error,
+.login-error,
+.signup-error {
+  padding: 12px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #ef4444;
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* Form structure */
+.auth-form,
+.login-form,
+.signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: right;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+/* Form Inputs */
+.form-group input {
+  width: 100%;
+  padding: 11px 16px;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+  box-sizing: border-box;
+  outline: none;
+  text-align: right;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group input:focus {
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+}
+
+.form-group input::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+
+/* Password Toggle Styling */
+.password-input-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  padding-left: 40px !important;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  left: 10px;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.password-toggle-btn:hover {
+  color: #1e293b;
+  background-color: #f1f5f9;
+}
+
+/* User Role Selector (Register) */
+.role-selector-group {
+  display: flex;
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.role-btn {
+  flex: 1;
+  padding: 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #64748b;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.role-btn:hover {
+  background-color: #f8fafc;
+  color: #1e293b;
+}
+
+.role-btn.active {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #ffffff;
+}
+
+/* Auth Submit Button */
+.auth-btn,
+.login-btn,
+.signup-btn {
+  width: 100%;
+  padding: 13px;
+  margin-top: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: #1d4ed8;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.auth-btn:hover:not(:disabled),
+.login-btn:hover:not(:disabled),
+.signup-btn:hover:not(:disabled) {
+  background-color: #1e40af;
+}
+
+.auth-btn:disabled,
+.login-btn:disabled,
+.signup-btn:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Auth Footer & Nav Links */
+.auth-footer,
+.login-footer,
+.signup-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 24px;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.auth-link,
+.signup-link,
+.login-link {
+  color: #1d4ed8;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.auth-link:hover,
+.signup-link:hover,
+.login-link:hover {
+  color: #1e40af;
+  text-decoration: underline;
+}

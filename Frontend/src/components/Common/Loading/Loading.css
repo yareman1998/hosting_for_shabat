@@ -4,8 +4,9 @@
   justify-content: center;
   align-items: center;
   padding: 48px;
-  min-height: 200px;
+  min-height: 70vh;
   width: 100%;
+  flex: 1;
 }
 
 .loading-spinner {

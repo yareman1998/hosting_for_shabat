@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { EyeIcon, EyeOffIcon } from '../../components/Common/Icons';
 import './Register.css';
 
 export default function SignUp() {
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
     phone_number: '',
     password: '',
+    confirm_password: '',
     user_type: 'guest',
     biography: ''
   });
@@ -21,7 +25,8 @@ export default function SignUp() {
     { id: 'full_name', label: 'שם מלא', type: 'text', placeholder: 'ישראל ישראלי' },
     { id: 'email', label: 'כתובת אימייל', type: 'email', placeholder: 'name@example.com' },
     { id: 'phone_number', label: 'מספר טלפון', type: 'tel', placeholder: '050-1234567' },
-    { id: 'password', label: 'סיסמה', type: 'password', placeholder: 'לפחות 8 תווים, אות גדולה וספרה' }
+    { id: 'password', label: 'סיסמה', type: 'password', placeholder: 'לפחות 8 תווים, אות גדולה וספרה' },
+    { id: 'confirm_password', label: 'אימות סיסמה', type: 'password', placeholder: 'הקלד שוב את הסיסמה' }
   ];
 
   const handleInputChange = (e) => {
@@ -35,7 +40,7 @@ export default function SignUp() {
 
   // Pre-validates the fields to perfectly align with your backend Pydantic checks
   const validateClientSide = () => {
-    const { password } = formData;
+    const { password, confirm_password } = formData;
 
     if (password.length < 8) {
       setError('הסיסמה חייבת להכיל 8 תווים לפחות.');
@@ -47,6 +52,10 @@ export default function SignUp() {
     }
     if (!/\d/.test(password)) {
       setError('הסיסמה חייבת להכיל לפחות ספרה אחת (0-9).');
+      return false;
+    }
+    if (password !== confirm_password) {
+      setError('הסיסמאות אינן תואמות.');
       return false;
     }
     return true;
@@ -92,19 +101,60 @@ export default function SignUp() {
   };
 
   function renderFields() {
-    return fieldsConfig.map((field) => (
-      <div className="form-group" key={field.id}>
-        <label htmlFor={field.id}>{field.label}</label>
-        <input
-          type={field.type}
-          id={field.id}
-          required
-          placeholder={field.placeholder}
-          value={formData[field.id]}
-          onChange={handleInputChange}
-        />
-      </div>
-    ));
+    return fieldsConfig.map((field) => {
+      const isPassword = field.id === 'password';
+      const isConfirmPassword = field.id === 'confirm_password';
+      const isPasswordField = isPassword || isConfirmPassword;
+
+      if (isPasswordField) {
+        const isVisible = isPassword ? showPassword : showConfirmPassword;
+        const toggleVisibility = () => {
+          if (isPassword) {
+            setShowPassword((prev) => !prev);
+          } else {
+            setShowConfirmPassword((prev) => !prev);
+          }
+        };
+
+        return (
+          <div className="form-group" key={field.id}>
+            <label htmlFor={field.id}>{field.label}</label>
+            <div className="password-input-wrapper">
+              <input
+                type={isVisible ? 'text' : 'password'}
+                id={field.id}
+                required
+                placeholder={field.placeholder}
+                value={formData[field.id]}
+                onChange={handleInputChange}
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={toggleVisibility}
+                aria-label={isVisible ? 'הסתר סיסמה' : 'הצג סיסמה'}
+              >
+                {isVisible ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="form-group" key={field.id}>
+          <label htmlFor={field.id}>{field.label}</label>
+          <input
+            type={field.type}
+            id={field.id}
+            required
+            placeholder={field.placeholder}
+            value={formData[field.id]}
+            onChange={handleInputChange}
+          />
+        </div>
+      );
+    });
   }
 
   return (

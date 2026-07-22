@@ -37,7 +37,7 @@ export const authApi = {
     const response = await api.post('/auth/login', credentials);
     if (response.data?.access_token) {
       localStorage.setItem('token', response.data.access_token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      localStorage.removeItem('user'); // Clean legacy insecure user cache
     }
     return response.data;
   },
@@ -85,6 +85,7 @@ export const adminApi = {
   verifyGuest: (userId, isVerified) => api.patch(`/admin/users/${userId}/verify-guest`, { is_soldier_or_national_service: isVerified }),
   getBookings: () => api.get('/admin/bookings'),
   deletePost: (postId) => api.delete(`/admin/posts/${postId}`),
+  deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
 };
 
 export default api;

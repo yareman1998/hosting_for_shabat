@@ -4,6 +4,147 @@ import { HomeIcon, UsersIcon, CheckCircleIcon, MyRequestsIcon } from '../../comp
 import PageContainer from '../../components/Common/PageContainer/PageContainer';
 import './Admin.css';
 
+function DonutChart({ data, title }) {
+  const total = data.reduce((sum, item) => sum + (item.value || 0), 0);
+  const radius = 38;
+  const circumference = 2 * Math.PI * radius;
+
+  let cumulativePercent = 0;
+
+  return (
+    <div className="classic-chart-card">
+      <h3 className="classic-chart-title">{title}</h3>
+      <div className="donut-chart-wrapper">
+        <div className="donut-svg-container">
+          <svg viewBox="0 0 100 100" className="donut-svg">
+            <circle
+              cx="50"
+              cy="50"
+              r={radius}
+              fill="transparent"
+              stroke="var(--border-light, #e2e8f0)"
+              strokeWidth="10"
+            />
+            {total > 0 &&
+              data.map((item, idx) => {
+                if (!item.value) return null;
+                const percent = item.value / total;
+                const strokeLength = percent * circumference;
+                const strokeOffset = -cumulativePercent * circumference;
+                cumulativePercent += percent;
+
+                return (
+                  <circle
+                    key={idx}
+                    cx="50"
+                    cy="50"
+                    r={radius}
+                    fill="transparent"
+                    stroke={item.color}
+                    strokeWidth="10"
+                    strokeDasharray={`${strokeLength} ${circumference - strokeLength}`}
+                    strokeDashoffset={strokeOffset}
+                    transform="rotate(-90 50 50)"
+                    className="donut-segment"
+                  />
+                );
+              })}
+            <text x="50" y="47" textAnchor="middle" className="donut-center-total">
+              {total}
+            </text>
+            <text x="50" y="62" textAnchor="middle" className="donut-center-label">
+              סה״כ
+            </text>
+          </svg>
+        </div>
+
+        <div className="donut-legend">
+          {data.map((item, idx) => {
+            const pct = total > 0 ? Math.round(((item.value || 0) / total) * 100) : 0;
+            return (
+              <div key={idx} className="legend-item">
+                <span className="legend-color-dot" style={{ backgroundColor: item.color }} />
+                <span className="legend-label">{item.label}</span>
+                <span className="legend-value">{item.value || 0} ({pct}%)</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ColumnChart({ data, title, barColor = '#2563eb', emptyText }) {
+  const hasData = data && data.length > 0;
+  const maxVal = hasData ? Math.max(...data.map(d => d.count), 1) : 1;
+  const yMax = Math.ceil(maxVal * 1.25) || 4;
+  const gridTicks = [
+    yMax,
+    Math.round(yMax * 0.75),
+    Math.round(yMax * 0.5),
+    Math.round(yMax * 0.25),
+    0
+  ];
+
+  return (
+    <div className="admin-card classic-breakdown-card">
+      <div className="admin-card-header">
+        <h3 className="admin-card-title">{title}</h3>
+      </div>
+
+      {!hasData ? (
+        <p className="empty-stats-text">{emptyText}</p>
+      ) : (
+        <div className="classic-column-chart-container">
+          <div className="chart-y-axis">
+            {gridTicks.map((tick, idx) => (
+              <span key={idx} className="y-axis-tick">{tick}</span>
+            ))}
+          </div>
+
+          <div className="chart-main-area">
+            <div className="chart-grid-lines">
+              <div className="grid-line" />
+              <div className="grid-line" />
+              <div className="grid-line" />
+              <div className="grid-line" />
+              <div className="grid-line baseline" />
+            </div>
+
+            <div className="chart-columns-flex">
+              {data.map((item, idx) => {
+                const label = item.city || item.level || item.label;
+                const heightPct = yMax > 0 ? (item.count / yMax) * 100 : 0;
+                return (
+                  <div key={idx} className="chart-column-group">
+                    <div className="chart-bar-wrapper">
+                      {item.count > 0 && (
+                        <span className="chart-bar-tooltip">{item.count}</span>
+                      )}
+                      <div
+                        className="chart-bar-fill"
+                        style={{
+                          height: `${heightPct}%`,
+                          backgroundColor: item.count > 0 ? barColor : 'transparent',
+                          border: item.count > 0 ? `1px solid ${barColor}` : 'none'
+                        }}
+                      />
+                    </div>
+                    <span className="chart-x-label" title={label}>
+                      {label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -26,14 +167,36 @@ export default function AdminDashboard() {
     loadStats();
   }, []);
 
+  // Prepare Donut Chart Datasets
+  const userData = [
+    { label: 'מארחים רשומים', value: stats?.total_hosts || 0, color: '#2563eb' },
+    { label: 'אורחים רגילים', value: Math.max(0, (stats?.total_guests || 0) - (stats?.total_soldiers || 0)), color: '#059669' },
+    { label: 'חיילים / בנות שירות', value: stats?.total_soldiers || 0, color: '#d97706' },
+  ];
+
+  const postData = [
+    { label: 'בקשות פתוחות', value: stats?.open_posts || 0, color: '#3b82f6' },
+    { label: 'בקשות דחופות', value: stats?.urgent_posts || 0, color: '#dc2626' },
+    { label: 'בקשות ששודכו', value: Math.max(0, (stats?.total_posts || 0) - (stats?.open_posts || 0)), color: '#10b981' },
+  ];
+
+  const matchData = [
+    { label: 'שידוכים פעילים', value: stats?.active_matches || 0, color: '#059669' },
+    { label: 'שידוכים בהמתנה', value: stats?.pending_matches || 0, color: '#f59e0b' },
+  ];
+
+  const hostGuestRatio = stats?.total_hosts && stats?.total_hosts > 0 
+    ? (stats.total_guests / stats.total_hosts).toFixed(1) 
+    : 0;
+
   return (
     <PageContainer loading={loading} error={error}>
       <div className="admin-page-header">
-        <h2 className="admin-page-title">לוח בקרה אדמין</h2>
-        <p className="admin-page-subtitle">מבט על של נתוני מערכת האירוח</p>
+        <h2 className="admin-page-title">לוח בקרה וסטטיסטיקה</h2>
+        <p className="admin-page-subtitle">סקירה קלאסית ומפורטת של ביצועי ומדדי המערכת</p>
       </div>
 
-      {/* Metrics Cards Grid */}
+      {/* Top Metric Cards */}
       <div className="admin-metrics-grid">
         <div className="admin-metric-card">
           <div className="admin-metric-card-info">
@@ -57,10 +220,30 @@ export default function AdminDashboard() {
 
         <div className="admin-metric-card">
           <div className="admin-metric-card-info">
+            <h4>חיילים ובנות שירות</h4>
+            <p>{stats?.total_soldiers || 0}</p>
+          </div>
+          <div className="admin-metric-icon-wrapper amber">
+            <UsersIcon />
+          </div>
+        </div>
+
+        <div className="admin-metric-card">
+          <div className="admin-metric-card-info">
             <h4>שידוכים פעילים</h4>
             <p>{stats?.active_matches || 0}</p>
           </div>
           <div className="admin-metric-icon-wrapper green">
+            <CheckCircleIcon />
+          </div>
+        </div>
+
+        <div className="admin-metric-card">
+          <div className="admin-metric-card-info">
+            <h4>אחוז שידוך מוצלח</h4>
+            <p>{stats?.match_rate_percentage || 0}%</p>
+          </div>
+          <div className="admin-metric-icon-wrapper teal">
             <CheckCircleIcon />
           </div>
         </div>
@@ -76,32 +259,30 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="admin-dashboard-widgets">
-        <div className="admin-card">
-          <div className="admin-card-header">
-            <h3 className="admin-card-title">סטטוס דחיפות</h3>
-          </div>
-          <div className="widget-list">
-            <div className="widget-item">
-              <div className="widget-item-info">
-                <span className="widget-item-title">בקשות אירוח דחופות (ביממה הקרובה)</span>
-                <span className="widget-item-desc">משתמשים שמחפשים אירוח דחוף ללא מענה עדיין</span>
-              </div>
-              <span className={`badge ${stats?.urgent_posts > 0 ? 'urgent' : 'active'}`}>
-                {stats?.urgent_posts || 0} בקשות דחופות
-              </span>
-            </div>
-            <div className="widget-item">
-              <div className="widget-item-info">
-                <span className="widget-item-title">יחס ממוצע (אורח למארח)</span>
-                <span className="widget-item-desc">יחס האורחים והמארחים הרשומים במערכת</span>
-              </div>
-              <span className="badge host">
-                {stats?.total_hosts ? (stats.total_guests / stats.total_hosts).toFixed(1) : 0} : 1
-              </span>
-            </div>
-          </div>
-        </div>
+      {/* Visual Donut Charts Grid */}
+      <div className="classic-charts-grid">
+        <DonutChart title="התפלגות משתמשי המערכת" data={userData} />
+        <DonutChart title="סטטוס בקשות אירוח" data={postData} />
+        <DonutChart title="סטטוס שידוכים במערכת" data={matchData} />
+      </div>
+
+      {/* Analytics & Detailed Breakdown Rows */}
+      <div className="admin-dashboard-analytics-grid">
+        {/* City Breakdown Widget */}
+        <ColumnChart
+          title="ערים מובילות במערכת (מארחים)"
+          data={stats?.cities_breakdown}
+          barColor="#2563eb"
+          emptyText="טרם הוגדרו ערים על ידי המארחים במערכת"
+        />
+
+        {/* Kashrut Breakdown Widget */}
+        <ColumnChart
+          title="פילוח רמות כשרות"
+          data={stats?.kashrut_breakdown}
+          barColor="#059669"
+          emptyText="אין עדיין נתוני כשרות במערכת"
+        />
       </div>
     </PageContainer>
   );

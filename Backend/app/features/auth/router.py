@@ -60,9 +60,31 @@ def register(user_in: UserCreate, background_tasks: BackgroundTasks, db: Session
 @router.post("/login")
 def login(login_data: LoginRequest, db: Session = Depends(get_db)):
     if login_data.username == settings.ADMIN_EMAIL and login_data.password == settings.ADMIN_PASSWORD:
+        admin_user = db.query(User).filter(User.email == settings.ADMIN_EMAIL).first()
+        if admin_user:
+            return {
+                "access_token": create_access_token({"sub": str(admin_user.id), "user_type": "admin"}),
+                "token_type": "bearer",
+                "user": {
+                    "id": str(admin_user.id),
+                    "email": admin_user.email,
+                    "full_name": admin_user.full_name,
+                    "user_type": admin_user.user_type,
+                    "is_email_verified": admin_user.is_email_verified,
+                    "is_phone_verified": admin_user.is_phone_verified,
+                }
+            }
         return {
-            "access_token": create_access_token({"sub": "admin"}), "token_type": "bearer",
-            "user": {"id": "00000000-0000-0000-0000-000000000000", "email": settings.ADMIN_EMAIL, "full_name": "System Administrator", "user_type": "admin", "is_email_verified": True, "is_phone_verified": True}
+            "access_token": create_access_token({"sub": "admin", "user_type": "admin"}),
+            "token_type": "bearer",
+            "user": {
+                "id": "00000000-0000-0000-0000-000000000000",
+                "email": settings.ADMIN_EMAIL,
+                "full_name": "System Administrator",
+                "user_type": "admin",
+                "is_email_verified": True,
+                "is_phone_verified": True,
+            }
         }
 
     user = db.query(User).filter(
@@ -71,9 +93,18 @@ def login(login_data: LoginRequest, db: Session = Depends(get_db)):
     if not user or not verify_password(login_data.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email/phone or password")
 
+    u_type = user.user_type.value if hasattr(user.user_type, "value") else str(user.user_type)
     return {
-        "access_token": create_access_token({"sub": str(user.id)}), "token_type": "bearer",
-        "user": {"id": str(user.id), "email": user.email, "full_name": user.full_name, "user_type": user.user_type, "is_email_verified": user.is_email_verified, "is_phone_verified": user.is_phone_verified}
+        "access_token": create_access_token({"sub": str(user.id), "user_type": u_type}),
+        "token_type": "bearer",
+        "user": {
+            "id": str(user.id),
+            "email": user.email,
+            "full_name": user.full_name,
+            "user_type": user.user_type,
+            "is_email_verified": user.is_email_verified,
+            "is_phone_verified": user.is_phone_verified,
+        }
     }
 
 @router.get("/me", response_model=UserMeResponse)

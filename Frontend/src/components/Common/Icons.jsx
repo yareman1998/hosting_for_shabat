@@ -136,6 +136,12 @@ export const EyeOffIcon = (props) => (
   </IconWrapper>
 );
 
+export const ChevronLeftIcon = (props) => (
+  <IconWrapper {...props}>
+    <polyline points="15 18 9 12 15 6" />
+  </IconWrapper>
+);
+
 // לוגו - נשאר עצמאי בגלל המבנה הייחודי והגרדיאנט
 export function Logo({ size = 32, className = "" }) {
   return (

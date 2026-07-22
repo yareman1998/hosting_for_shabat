@@ -89,7 +89,7 @@ class UserMeResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
     email: EmailStr
-    phone_number: str
+    phone_number: Optional[str] = None
     full_name: str
     user_type: UserType
     biography: Optional[str] = None

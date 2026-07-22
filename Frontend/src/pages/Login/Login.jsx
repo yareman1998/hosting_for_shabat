@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { EyeIcon, EyeOffIcon } from '../../components/Common/Icons';
 import './Login.css';
 
 export default function Login({ onLoginSuccess }) {
   // Reverted key back to 'username' to satisfy the backend schema
   const [formData, setFormData] = useState({ username: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -78,14 +80,35 @@ export default function Login({ onLoginSuccess }) {
     return fieldsConfig.map((field) => (
       <div className="form-group" key={field.id}>
         <label htmlFor={field.id}>{field.label}</label>
-        <input
-          type={field.type}
-          id={field.id}
-          required
-          placeholder={field.placeholder}
-          value={formData[field.id]}
-          onChange={handleChange}
-        />
+        {field.id === 'password' ? (
+          <div className="password-input-wrapper">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              id={field.id}
+              required
+              placeholder={field.placeholder}
+              value={formData[field.id]}
+              onChange={handleChange}
+            />
+            <button
+              type="button"
+              className="password-toggle-btn"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
+            >
+              {showPassword ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
+            </button>
+          </div>
+        ) : (
+          <input
+            type={field.type}
+            id={field.id}
+            required
+            placeholder={field.placeholder}
+            value={formData[field.id]}
+            onChange={handleChange}
+          />
+        )}
       </div>
     ));
   }

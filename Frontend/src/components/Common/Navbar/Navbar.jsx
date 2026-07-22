@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { HomeIcon, FindHostIcon, MyRequestsIcon, RequestsBoardIcon, ProfileIcon, Logo, BellIcon, AdminIcon } from '../Icons';
+import { HomeIcon, FindHostIcon, MyRequestsIcon, RequestsBoardIcon, ProfileIcon, Logo, BellIcon, AdminIcon, UsersIcon } from '../Icons';
 import './Navbar.css';
 
 export default function Navbar({ userRole }) {
@@ -33,14 +33,33 @@ export default function Navbar({ userRole }) {
     },
     {
       path: '/admin',
-      label: 'ניהול מערכת',
+      end: true,
+      label: 'לוח בקרה',
       roles: ['admin'],
       icon: <AdminIcon className="nav-icon" />
     },
     {
+      path: '/admin/users',
+      label: 'ניהול משתמשים',
+      roles: ['admin'],
+      icon: <UsersIcon className="nav-icon" />
+    },
+    {
+      path: '/admin/listings',
+      label: 'דירות ומארחים',
+      roles: ['admin'],
+      icon: <HomeIcon className="nav-icon" />
+    },
+    {
+      path: '/admin/bookings',
+      label: 'בקשות',
+      roles: ['admin'],
+      icon: <MyRequestsIcon className="nav-icon" />
+    },
+    {
       path: '/profile',
       label: 'פרופיל',
-      roles: ['guest', 'host', 'admin'],
+      roles: ['guest', 'host'],
       icon: <ProfileIcon className="nav-icon" />
     }
   ];
@@ -54,6 +73,7 @@ export default function Navbar({ userRole }) {
       <li key={link.path}>
         <NavLink
           to={link.path}
+          end={link.end}
           className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}
         >
           <div className={link.hasBadge ? "nav-item-badge-wrapper" : ""}>
@@ -72,15 +92,15 @@ export default function Navbar({ userRole }) {
       const userStr = localStorage.getItem('user');
       if (userStr) {
         const userObj = JSON.parse(userStr);
-        if (userObj.full_name) {
+        if (userObj?.full_name) {
           return userObj.full_name.trim().charAt(0);
         }
-        if (userObj.email) {
+        if (userObj?.email) {
           return userObj.email.trim().charAt(0).toUpperCase();
         }
       }
     } catch (e) {
-      console.error(e);
+      // Fallback cleanly
     }
     return 'מ'; // מ - עבור משתמש כברירת מחדל
   };

@@ -10,7 +10,6 @@ import httpx
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session, joinedload
 from app.core.config import settings
 from app.database.models.user import User, UserType
@@ -25,11 +24,13 @@ def hash_password(password: str) -> str:
     hashed = bcrypt.hashpw(password_bytes, salt)
     return hashed.decode('utf-8')
 
+
 def verify_password(plain: str, hashed: str) -> bool:
     try:
         return bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8'))
     except Exception:
         return False
+
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     payload = {
@@ -39,7 +40,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
-# --- Added this missing line here so get_current_user can find it ---
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)
 
 
@@ -58,10 +58,18 @@ def get_current_user(token: Optional[str] = Depends(oauth2_scheme), db: Session 
         if not user_id:
             raise exc
         if user_id == "admin":
+            admin_db = db.query(User).filter(User.email == settings.ADMIN_EMAIL).first()
+            if admin_db:
+                return admin_db
             return User(
                 id=uuid.UUID("00000000-0000-0000-0000-000000000000"),
-                email=settings.ADMIN_EMAIL, full_name="System Administrator",
-                user_type=UserType.ADMIN, is_active=True,
+                email=settings.ADMIN_EMAIL,
+                phone_number="",
+                full_name="System Administrator",
+                user_type=UserType.ADMIN,
+                is_active=True,
+                is_email_verified=True,
+                is_phone_verified=True,
             )
         validated_uuid = uuid.UUID(user_id)
     except (jwt.PyJWTError, ValueError):
@@ -73,8 +81,37 @@ def get_current_user(token: Optional[str] = Depends(oauth2_scheme), db: Session 
     ).filter(User.id == validated_uuid).first()
     
     if not user:
+        if str(validated_uuid) == "00000000-0000-0000-0000-000000000000":
+            admin_db = db.query(User).filter(User.email == settings.ADMIN_EMAIL).first()
+            if admin_db:
+                return admin_db
+            return User(
+                id=uuid.UUID("00000000-0000-0000-0000-000000000000"),
+                email=settings.ADMIN_EMAIL,
+                phone_number="",
+                full_name="System Administrator",
+                user_type=UserType.ADMIN,
+                is_active=True,
+                is_email_verified=True,
+                is_phone_verified=True,
+            )
         raise exc
     return user
+
+
+class RoleChecker:
+    def __init__(self, allowed_roles: list[str]):
+        self.allowed_roles = allowed_roles
+
+    def __call__(self, current_user: User = Depends(get_current_user)):
+        role = current_user.user_type.value if hasattr(current_user.user_type, "value") else str(current_user.user_type)
+        if role not in self.allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions for this action",
+            )
+        return current_user
+
 
 def validate_otp(stored_code: Optional[str], expires_at: Optional[datetime], input_code: str) -> None:
     if not stored_code or stored_code != input_code:
@@ -84,6 +121,7 @@ def validate_otp(stored_code: Optional[str], expires_at: Optional[datetime], inp
             expires_at = expires_at.replace(tzinfo=timezone.utc)
         if expires_at < datetime.now(timezone.utc):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Verification code has expired")
+
 
 def send_verification_email(email: str, code: str) -> bool:
     if not all([settings.SMTP_USER, settings.SMTP_PASSWORD, settings.SMTP_FROM_EMAIL]):
@@ -112,6 +150,7 @@ def send_verification_email(email: str, code: str) -> bool:
     except Exception as exc:
         logger.error(f"Failed to send email to {email}: {exc}")
         return False
+
 
 def send_telegram_message(chat_id: str, text: str) -> bool:
     if not settings.TELEGRAM_BOT_TOKEN:

@@ -8,18 +8,148 @@ from app.database.models.profile import GuestProfile, HostProfile
 from app.database.models.user import User, UserType
 from app.database.session import get_db
 from app.features.auth.schemas import (
-    GuestProfileBase, HostProfileBase, LoginRequest, UserCreate, UserMeResponse, VerifyEmailRequest, VerifyPhoneRequest
+    GuestProfileBase, HostProfileBase, LoginRequest, UserCreate, UserMeResponse, VerifyEmailRequest, VerifyPhoneRequest,
+    OTPRequestSchema, UserRegisterVerifySchema
 )
 from app.features.auth.services import (
     create_access_token, get_current_user, hash_password, send_telegram_message, send_verification_email, validate_otp, verify_password
 )
 
+# Explicitly import the existing email sending service
+from app.features.auth.services import send_verification_email
+
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 _OTP_TTL = timedelta(minutes=15)
+
+# Temporary in-memory OTP store for registration flow.
+# In a production environment, use a shared store like Redis with expiration.
+# Example Redis:
+# redis_client.setex(f"otp:{phone_number}", 600, code)
+otp_store = {}  # format: {phone_number: {"code": str, "expires_at": datetime}}
+
+@router.post("/register/request-otp", status_code=status.HTTP_200_OK)
+def request_otp(data: OTPRequestSchema, db: Session = Depends(get_db)):
+    # Validate that neither the phone nor the email already exists
+    existing_user = db.query(User).filter(
+        (User.phone_number == data.phone_number) | (User.email == data.email)
+    ).first()
+    
+    if existing_user:
+        if existing_user.phone_number == data.phone_number:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Phone number already registered"
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email address already registered"
+            )
+    
+    # Generate 6-digit random code
+    code = f"{random.randint(100_000, 999_999)}"
+    
+    # Store temporary OTP with expiration keyed by phone number
+    expires_at = datetime.now(timezone.utc) + _OTP_TTL
+    otp_store[data.phone_number] = {
+        "code": code,
+        "expires_at": expires_at
+    }
+    
+    # Invoke existing email service/utility to send the code
+    try:
+        email_sent = send_verification_email(data.email, code)
+        if not email_sent:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to send verification email"
+            )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Email service error: {str(exc)}"
+        )
+    
+    return {"message": "Verification code sent to email successfully"}
+
+@router.post("/register/verify", status_code=status.HTTP_201_CREATED)
+def register_verify(data: UserRegisterVerifySchema, db: Session = Depends(get_db)):
+    # Validate submitted OTP against the stored code
+    otp_entry = otp_store.get(data.phone_number)
+    if not otp_entry:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No OTP verification code requested for this phone number"
+        )
+    
+    # Check expiration
+    if otp_entry["expires_at"] < datetime.now(timezone.utc):
+        otp_store.pop(data.phone_number, None)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP verification code has expired"
+        )
+        
+    # Check code match
+    if otp_entry["code"] != data.otp_code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect verification code"
+        )
+        
+    # Check database again for duplicate email or phone number
+    if db.query(User).filter((User.email == data.email) | (User.phone_number == data.phone_number)).first():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email or phone already registered"
+        )
+        
+    # Hash password and create user in DB
+    new_user = User(
+        email=data.email,
+        phone_number=data.phone_number,
+        full_name=data.full_name,
+        hashed_password=hash_password(data.password),
+        user_type=UserType(data.user_type.lower()),
+        is_active=True,
+        is_phone_verified=True,
+        is_email_verified=False
+    )
+    db.add(new_user)
+    db.flush()
+    
+    # Create respective profile
+    if new_user.user_type == UserType.HOST:
+        db.add(HostProfile(user_id=new_user.id, city="Not Specified"))
+    elif new_user.user_type == UserType.GUEST:
+        db.add(GuestProfile(user_id=new_user.id))
+        
+    db.commit()
+    
+    # Delete the used OTP
+    otp_store.pop(data.phone_number, None)
+    
+    # Immediately return a valid JWT access_token so the user logs in automatically
+    u_type = new_user.user_type.value if hasattr(new_user.user_type, "value") else str(new_user.user_type)
+    return {
+        "access_token": create_access_token({"sub": str(new_user.id), "user_type": u_type}),
+        "token_type": "bearer",
+        "user": {
+            "id": str(new_user.id),
+            "email": new_user.email,
+            "full_name": new_user.full_name,
+            "user_type": new_user.user_type,
+            "is_email_verified": new_user.is_email_verified,
+            "is_phone_verified": new_user.is_phone_verified,
+        }
+    }
 
 _MSG_ONBOARDING = "👋 Hello!\n\nPlease send the <b>6-digit verification code</b> you received.\n📌 Example: <code>123456</code>"
 _MSG_INVALID_CODE = "❌ The code is incorrect or expired."
 _MSG_SUCCESS = "✅ <b>Verification completed!</b> 🎉\n\nHello {name}, your phone number has been verified."
+
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(user_in: UserCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):

@@ -1,5 +1,5 @@
 :root {
-  /* --- Core Color Theme (Preserved exact values) --- */
+  /* --- Core Color Theme --- */
   --bg: #ffffff;
   --bg-secondary: #f8fafc;
   --text: #6b6375;
@@ -59,41 +59,41 @@
   --heading: 'Assistant', 'Rubik', system-ui, -apple-system, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
-  /* --- Sizing & Spacing --- */
-  --layout-padding: 40px;
-  --navbar-padding: 12px 32px;
-  --nav-item-padding: 8px 16px;
-
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
   color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
 
-  @media (max-width: 1024px) {
+@media (max-width: 1024px) {
+  :root {
     font-size: 16px;
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --bg-secondary: #1f2028;
-    --border: #2e303a;
-    --border-light: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+/* 
+  THIS is what controls Dark Mode now!
+  No more @media queries blocking your toggle button.
+*/
+body.dark-theme {
+  --text: #9ca3af;
+  --text-h: #f3f4f6;
+  --bg: #16171d;
+  --bg-secondary: #1f2028;
+  --border: #2e303a;
+  --border-light: #2e303a;
+  --code-bg: #1f2028;
+  --accent: #c084fc;
+  --accent-bg: rgba(192, 132, 252, 0.15);
+  --accent-border: rgba(192, 132, 252, 0.5);
+  --social-bg: rgba(47, 48, 58, 0.5);
+  --shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  
+  --navbar-logo-title: #f8fafc;
+  --navbar-logo-subtitle: #94a3b8;
 }
 
 * {
@@ -104,9 +104,10 @@ body {
   margin: 0;
   padding: 0;
   direction: rtl; /* Global RTL for Hebrew support */
-  text-align: right; /* Default text alignment */
-  background: var(--bg);
+  text-align: right; 
+  background-color: var(--bg); /* Body dynamically reads the active theme variable */
   color: var(--text);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 #root {
@@ -119,12 +120,13 @@ body {
   flex-direction: column;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+/* Force container backgrounds to be transparent so the body color shows through */
+.profile-container, 
+.login-container {
+  background-color: transparent !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
   font-family: var(--heading);
   font-weight: 700;
   color: var(--text-h);
@@ -135,17 +137,16 @@ h1 {
   font-size: 2.5rem;
   letter-spacing: -1px;
   margin-bottom: 24px;
-  @media (max-width: 1024px) {
-    font-size: 2rem;
-  }
+}
+
+@media (max-width: 1024px) {
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.25rem; }
 }
 
 h2 {
   font-size: 1.5rem;
   margin-bottom: 16px;
-  @media (max-width: 1024px) {
-    font-size: 1.25rem;
-  }
 }
 
 p {
@@ -165,5 +166,3 @@ code {
 .text-muted {
   color: var(--text-muted);
 }
-
-

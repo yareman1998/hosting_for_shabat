@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
-import { Sun, Moon, Shield, Eye, EyeOff } from 'lucide-react';
+import { authApi } from '../../api/api';
+import { Shield, Eye, EyeOff } from 'lucide-react';
 import './Login.css';
 
 export default function Login({ onLoginSuccess }) {
@@ -10,24 +10,10 @@ export default function Login({ onLoginSuccess }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Initialize theme from localStorage, default to light mode
-  const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
-
   const navigate = useNavigate();
   const location = useLocation();
 
   const isLoginActive = location.pathname === '/login' || location.pathname === '/';
-
-  // Synchronize layout dark-theme classes
-  useEffect(() => {
-    if (isDark) {
-      document.body.classList.add('dark-theme');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.body.classList.remove('dark-theme');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDark]);
 
   const fieldsConfig = [
     { id: 'username', label: 'כתובת אימייל', type: 'email', placeholder: 'name@example.com' },
@@ -45,15 +31,9 @@ export default function Login({ onLoginSuccess }) {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:8000/api/auth/login', formData, {
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (response.data && response.data.access_token) {
-        localStorage.setItem('token', response.data.access_token);
-        if (onLoginSuccess) await onLoginSuccess();
-        navigate('/');
-      }
+      await authApi.login(formData);
+      if (onLoginSuccess) await onLoginSuccess();
+      navigate('/');
     } catch (err) {
       setError('כתובת אימייל או סיסמה שגויים.');
     } finally {
@@ -101,36 +81,15 @@ export default function Login({ onLoginSuccess }) {
   return (
     <div className="login-container">
       <div className="login-card">
-        {/* Floating Theme Switcher Button */}
-        <button
-          type="button"
-          className="theme-toggle-btn"
-          onClick={() => setIsDark(!isDark)}
-          title={isDark ? "מצב בהיר" : "מצב כהה"}
-        >
-          {isDark ? (
-            <Sun className="theme-icon" size={24} color="#eab308" />
-          ) : (
-            <Moon className="theme-icon" size={24} color="#64748b" />
-          )}
-        </button>
-
-        {/* Navigation Switcher Pill */}
+        {/* Navigation Switcher Pill (Without Arrows) */}
         <div className="auth-toggle-wrapper">
           <div className="auth-toggle-pill">
-            <button
-              type="button"
-              className={`toggle-arrow ${!isLoginActive ? 'disabled' : ''}`}
-              onClick={() => navigate('/register')}
-              disabled={!isLoginActive}
-            >
-              ‹
-            </button>
-            <div className="toggle-options-container">
+            <div className="toggle-options-container" style={{ width: '100%' }}>
               <button
                 type="button"
                 className={`toggle-btn-option ${!isLoginActive ? 'active' : ''}`}
                 onClick={() => navigate('/register')}
+                style={{ flex: 1, textAlign: 'center' }}
               >
                 הרשמה
               </button>
@@ -138,18 +97,11 @@ export default function Login({ onLoginSuccess }) {
                 type="button"
                 className={`toggle-btn-option ${isLoginActive ? 'active' : ''}`}
                 onClick={() => navigate('/login')}
+                style={{ flex: 1, textAlign: 'center' }}
               >
                 התחברות
               </button>
             </div>
-            <button
-              type="button"
-              className={`toggle-arrow ${isLoginActive ? 'disabled' : ''}`}
-              onClick={() => navigate('/login')}
-              disabled={isLoginActive}
-            >
-              ›
-            </button>
           </div>
         </div>
 

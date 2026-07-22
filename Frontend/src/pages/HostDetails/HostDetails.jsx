@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { fetchBadgeCount } from '../../store/requestsSlice';
+import { fetchPosts } from '../../store/requestsSlice';
 import { listingsApi, bookingsApi } from '../../api/api';
 import HostDetailsHeader from '../../components/HostDetails/HostDetailsHeader';
 import HostDetailsHero from '../../components/HostDetails/HostDetailsHero';
@@ -110,7 +110,7 @@ export default function HostDetails() {
     try {
       if (host?.id) {
         await bookingsApi.requestBooking({ host_profile_id: host.id });
-        dispatch(fetchBadgeCount('guest'));
+        dispatch(fetchPosts());
       }
     } catch (err) {
       console.warn('Booking request notice:', err);

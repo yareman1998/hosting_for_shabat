@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import {
   House,
   Search,
@@ -13,18 +13,23 @@ import {
   User,
   Bell
 } from 'lucide-react';
-import { authApi } from '../../../api/api';
+import { logout } from '../../../store/authSlice';
 import { Logo, LogOutIcon } from '../Icons';
+import { getUserInitials } from '../../../utils/user';
 import './Navbar.css';
 
-export default function Navbar({ userRole }) {
+export default function Navbar() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   
   // States & Selectors
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
-  const [userName, setUserName] = useState('');
   const dropdownRef = useRef(null);
+
+  const user = useSelector((state) => state.auth.user);
+  const userRole = user?.user_type || null;
+  const userName = user?.full_name || '';
 
   const badgeCount = useSelector((state) => state.requests.badgeCount);
 
@@ -52,27 +57,11 @@ export default function Navbar({ userRole }) {
         >
           {link.icon}
           <span>{link.label}</span>
-          {link.hasBadge && <span className="requests-badge">{badgeCount}</span>}
+          {link.hasBadge && badgeCount > 0 && <span className="requests-badge">{badgeCount}</span>}
         </NavLink>
       </li>
     ));
   }
-
-  useEffect(() => {
-    const fetchUserForNav = async () => {
-      if (!localStorage.getItem('token')) return;
-
-      try {
-        const response = await authApi.getMe();
-        setUserName(response.data.full_name);
-        localStorage.setItem('user', JSON.stringify(response.data));
-      } catch (error) {
-        console.error("Navbar failed to fetch user:", error);
-      }
-    };
-
-    fetchUserForNav();
-  }, []);
 
   useEffect(() => {
     if (isDark) {
@@ -96,22 +85,11 @@ export default function Navbar({ userRole }) {
 
   const handleLogout = () => {
     setIsDropdownOpen(false);
-    authApi.logout(); 
+    dispatch(logout()); 
     navigate('/login');
   };
 
-  const getInitials = () => {
-    if (userName) return userName.trim().charAt(0);
-    try {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const userObj = JSON.parse(userStr);
-        if (userObj?.full_name) return userObj.full_name.trim().charAt(0);
-        if (userObj?.email) return userObj.email.trim().charAt(0).toUpperCase();
-      }
-    } catch (e) {}
-    return 'מ';
-  };
+  const getInitials = () => getUserInitials(user);
 
   const firstName = userName ? userName.split(' ')[0] : '';
 

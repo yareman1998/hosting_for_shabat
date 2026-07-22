@@ -1,10 +1,15 @@
 import { Outlet, Navigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import Navbar from '../Navbar/Navbar';
 import Loading from '../Loading/Loading';
 import { useGlobalWebSocket } from '../../../hooks/useGlobalWebSocket';
 import './Layout.css';
 
-export default function Layout({ userRole, loading }) {
+export default function Layout() {
+  const user = useSelector((state) => state.auth.user);
+  const loading = useSelector((state) => state.auth.loading);
+  const userRole = user?.user_type || null;
+
   // Initialize the global WebSocket connection and fetch badge count
   useGlobalWebSocket(userRole);
 
@@ -22,7 +27,7 @@ export default function Layout({ userRole, loading }) {
     <div className="layout-container">
       {/* The Navbar stays fixed at the top */}
       <header>
-        <Navbar userRole={userRole} />
+        <Navbar />
       </header>
       
       {/* Whichever child page is active gets rendered right here */}

@@ -1,18 +1,14 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { bookingsApi } from '../api/api';
+import { postsApi } from '../api/api';
 
-export const fetchBadgeCount = createAsyncThunk(
-  'requests/fetchBadgeCount',
-  async (userRole, { rejectWithValue }) => {
-    if (!localStorage.getItem('token') || userRole !== 'guest') {
-      return 0;
-    }
+export const fetchPosts = createAsyncThunk(
+  'requests/fetchPosts',
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await bookingsApi.getGuestRequestsCount();
-      return response.data.total_count;
+      const response = await postsApi.getOpenPosts();
+      return response.data;
     } catch (error) {
-      console.error("Redux failed to fetch requests count:", error);
-      return 0;
+      return rejectWithValue(error.response?.data?.detail || 'שגיאה בטעינת הבקשות');
     }
   }
 );
@@ -24,11 +20,11 @@ const requestsSlice = createSlice({
     badgeCount: 0,
     loading: true,
     error: null,
-    isMockData: false,
   },
   reducers: {
     setPosts: (state, action) => {
       state.posts = action.payload;
+      state.badgeCount = action.payload.length;
     },
     setBadgeCount: (state, action) => {
       state.badgeCount = action.payload;
@@ -39,14 +35,21 @@ const requestsSlice = createSlice({
     setError: (state, action) => {
       state.error = action.payload;
     },
-    setIsMockData: (state, action) => {
-      state.isMockData = action.payload;
-    },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchBadgeCount.fulfilled, (state, action) => {
-        state.badgeCount = action.payload;
+      .addCase(fetchPosts.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchPosts.fulfilled, (state, action) => {
+        state.posts = action.payload;
+        state.badgeCount = action.payload.length;
+        state.loading = false;
+      })
+      .addCase(fetchPosts.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
@@ -56,7 +59,6 @@ export const {
   setBadgeCount,
   setLoading,
   setError,
-  setIsMockData,
 } = requestsSlice.actions;
 
 export default requestsSlice.reducer;

@@ -55,8 +55,7 @@ class PostConnectionManager:
                         # Guests only get their own posts
                         guest_posts = db.query(GuestPost).join(GuestPost.guest_profile).filter(
                             GuestPost.guest_profile.has(user_id=conn["user_id"])
-                        ).all()
-                        guest_posts.sort(key=lambda p: p.created_at.desc())
+                        ).order_by(GuestPost.created_at.desc()).all()
                         guest_posts_data = [GuestPostResponse.model_validate(p).model_dump(mode="json") for p in guest_posts]
                         await conn["websocket"].send_json(guest_posts_data)
                 except Exception as e:
@@ -110,8 +109,7 @@ def get_posts(
             return []
         posts = db.query(GuestPost).filter(
             GuestPost.guest_profile_id == current_user.guest_profile.id
-        ).all()
-        posts.sort(key=lambda p: p.created_at.desc())
+        ).order_by(GuestPost.created_at.desc()).all()
         return posts
     else:
         posts = db.query(GuestPost).filter(GuestPost.status == PostStatus.OPEN).all()
@@ -210,8 +208,7 @@ async def websocket_posts_endpoint(
             elif user_type == UserType.GUEST:
                 posts = db.query(GuestPost).join(GuestPost.guest_profile).filter(
                     GuestPost.guest_profile.has(user_id=user_id)
-                ).all()
-                posts.sort(key=lambda p: p.created_at.desc())
+                ).order_by(GuestPost.created_at.desc()).all()
                 posts_data = [GuestPostResponse.model_validate(p).model_dump(mode="json") for p in posts]
                 await websocket.send_json(posts_data)
         finally:

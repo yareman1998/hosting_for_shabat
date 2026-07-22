@@ -1,30 +1,37 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { EyeIcon, EyeOffIcon } from '../../components/Common/Icons';
 import './Login.css';
 
 export default function Login({ onLoginSuccess }) {
-  // Reverted key back to 'username' to satisfy the backend schema
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Initialize theme from localStorage, default to light mode
+  const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
+
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isLoginActive = location.pathname === '/login' || location.pathname === '/';
+
+  // Synchronize layout dark-theme classes
+  useEffect(() => {
+    if (isDark) {
+      document.body.classList.add('dark-theme');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.body.classList.remove('dark-theme');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDark]);
 
   const fieldsConfig = [
-    {
-      id: 'username', // Changed back to 'username'
-      label: 'כתובת אימייל',
-      type: 'email',
-      placeholder: 'name@example.com',
-    },
-    {
-      id: 'password',
-      label: 'סיסמה',
-      type: 'password',
-      placeholder: '••••••••',
-    }
+    { id: 'username', label: 'כתובת אימייל', type: 'email', placeholder: 'name@example.com' },
+    { id: 'password', label: 'סיסמה', type: 'password', placeholder: '••••••••' }
   ];
 
   const handleChange = (e) => {
@@ -38,39 +45,17 @@ export default function Login({ onLoginSuccess }) {
     setLoading(true);
 
     try {
-      // Sends payload containing { username, password }
       const response = await axios.post('http://localhost:8000/api/auth/login', formData, {
         headers: { 'Content-Type': 'application/json' }
       });
 
       if (response.data && response.data.access_token) {
         localStorage.setItem('token', response.data.access_token);
-        
-        if (onLoginSuccess) {
-          await onLoginSuccess();
-        }
-        
+        if (onLoginSuccess) await onLoginSuccess();
         navigate('/');
-      } else {
-        setError('שגיאה בקבלת מפתח התחברות מהשרת.');
       }
     } catch (err) {
-      console.error("Login request failed:", err);
-      
-      if (err.response && err.response.data && err.response.data.detail) {
-        const detail = err.response.data.detail;
-        
-        if (typeof detail === 'string') {
-          setError(detail);
-        } else if (Array.isArray(detail)) {
-          const parsedErrors = detail.map(errObj => `${errObj.loc[1] || 'קלט'}: ${errObj.msg}`).join(', ');
-          setError(parsedErrors);
-        } else {
-          setError('נתונים לא תקינים נשלחו לשרת.');
-        }
-      } else {
-        setError('כתובת אימייל או סיסמה שגויים. אנא נסה שוב.');
-      }
+      setError('כתובת אימייל או סיסמה שגויים.');
     } finally {
       setLoading(false);
     }
@@ -116,8 +101,72 @@ export default function Login({ onLoginSuccess }) {
   return (
     <div className="login-container">
       <div className="login-card">
+        {/* Floating Theme Switcher Button */}
+        <button
+          type="button"
+          className="theme-toggle-btn"
+          onClick={() => setIsDark(!isDark)}
+          title={isDark ? "מצב בהיר" : "מצב כהה"}
+        >
+          {isDark ? (
+            <svg className="theme-icon" viewBox="0 0 24 24" fill="none" stroke="#eab308" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="5" fill="#eab308" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          ) : (
+            <svg className="theme-icon" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="#64748b" />
+            </svg>
+          )}
+        </button>
+
+        {/* Navigation Switcher Pill */}
+        <div className="auth-toggle-wrapper">
+          <div className="auth-toggle-pill">
+            <button
+              type="button"
+              className={`toggle-arrow ${!isLoginActive ? 'disabled' : ''}`}
+              onClick={() => navigate('/register')}
+              disabled={!isLoginActive}
+            >
+              ‹
+            </button>
+            <div className="toggle-options-container">
+              <button
+                type="button"
+                className={`toggle-btn-option ${!isLoginActive ? 'active' : ''}`}
+                onClick={() => navigate('/register')}
+              >
+                הרשמה
+              </button>
+              <button
+                type="button"
+                className={`toggle-btn-option ${isLoginActive ? 'active' : ''}`}
+                onClick={() => navigate('/login')}
+              >
+                התחברות
+              </button>
+            </div>
+            <button
+              type="button"
+              className={`toggle-arrow ${isLoginActive ? 'disabled' : ''}`}
+              onClick={() => navigate('/login')}
+              disabled={isLoginActive}
+            >
+              ›
+            </button>
+          </div>
+        </div>
+
         <div className="login-header">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="#1d4ed8" className="login-shield-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="#2563eb" className="login-shield-icon">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           </svg>
           <h2>שבת שלום</h2>

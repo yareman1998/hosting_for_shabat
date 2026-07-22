@@ -40,6 +40,9 @@ class HostProfile(Base):
     emergency_available: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
     full_address: Mapped[Optional[str]]
     max_guests: Mapped[int] = mapped_column(default=1, server_default=text("1"))
+    available_spots: Mapped[int] = mapped_column(default=3, server_default=text("3"))
+    has_lodging: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
+    image_url: Mapped[Optional[str]]
     num_bedrooms: Mapped[Optional[int]]
     has_pets: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
     accessibility: Mapped[Optional[str]]

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import {
   House,
   Search,
@@ -13,17 +14,19 @@ import {
   Bell
 } from 'lucide-react';
 import { authApi } from '../../../api/api';
-import { Logo } from '../Icons';
+import { Logo, LogOutIcon } from '../Icons';
 import './Navbar.css';
 
 export default function Navbar({ userRole }) {
   const navigate = useNavigate();
   
-  // States
+  // States & Selectors
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
   const [userName, setUserName] = useState('');
   const dropdownRef = useRef(null);
+
+  const badgeCount = useSelector((state) => state.requests.badgeCount);
 
   const linksConfig = [
     { path: '/', label: 'בית', roles: ['guest', 'host'], icon: <House className="nav-icon" /> },
@@ -49,7 +52,7 @@ export default function Navbar({ userRole }) {
         >
           {link.icon}
           <span>{link.label}</span>
-          {link.hasBadge && <span className="requests-badge">1</span>}
+          {link.hasBadge && <span className="requests-badge">{badgeCount}</span>}
         </NavLink>
       </li>
     ));
@@ -165,11 +168,7 @@ export default function Navbar({ userRole }) {
               <div className="dropdown-divider"></div>
 
               <button className="dropdown-item logout-item" onClick={handleLogout}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="dropdown-icon">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                  <polyline points="16 17 21 12 16 7"></polyline>
-                  <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>
+                <LogOutIcon className="dropdown-icon" />
                 התנתקות
               </button>
             </div>

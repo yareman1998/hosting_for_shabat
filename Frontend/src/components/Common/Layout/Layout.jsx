@@ -1,9 +1,13 @@
 import { Outlet, Navigate } from 'react-router-dom';
 import Navbar from '../Navbar/Navbar';
 import Loading from '../Loading/Loading';
+import { useGlobalWebSocket } from '../../../hooks/useGlobalWebSocket';
 import './Layout.css';
 
 export default function Layout({ userRole, loading }) {
+  // Initialize the global WebSocket connection and fetch badge count
+  useGlobalWebSocket(userRole);
+
   // If authentication state is still loading, show loading indicator instead of redirecting prematurely
   if (loading) {
     return <Loading />;

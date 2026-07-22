@@ -37,6 +37,12 @@ class HostSearchResponse(BaseModel):
     religious_orientation: Optional[str] = None
     availability_windows: Optional[str] = None
     emergency_available: Optional[bool] = False
+    max_guests: Optional[int] = 1
+    available_spots: Optional[int] = 3
+    has_lodging: Optional[bool] = True
+    image_url: Optional[str] = None
+    free_text_notes: Optional[str] = None
+    has_pets: Optional[bool] = False
     match_score: Optional[int] = None
     user: Optional[UserSimpleResponse] = None
 

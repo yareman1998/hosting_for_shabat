@@ -26,6 +26,22 @@
   --avatar-color: #ffffff;
   --social-bg: rgba(244, 243, 236, 0.5);
 
+  /* AI Match & Spot Status Tokens */
+  --match-high-color: #16a34a;
+  --match-high-bg: #f0fdf4;
+  --match-high-border: #bbf7d0;
+  --match-med-color: #2563eb;
+  --match-med-bg: #eff6ff;
+  --match-med-border: #bfdbfe;
+  --match-low-color: #ea580c;
+  --match-low-bg: #fff7ed;
+  --match-low-border: #fed7aa;
+
+  --spot-warning-color: #d97706;
+  --spot-warning-bg: #fffbeb;
+  --spot-full-color: #dc2626;
+  --spot-full-bg: #fef2f2;
+
   /* --- Navbar Specific Variables --- */
   --navbar-bg: var(--bg);
   --navbar-border: var(--border-light);

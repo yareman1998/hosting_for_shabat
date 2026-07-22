@@ -1,2 +1,288 @@
-/* Consolidated into shared Auth.css */
-@import '../Auth.css';
+/* --- Theme Variables --- */
+:root {
+  /* Light Mode Defaults */
+  --bg-viewport: #f0f2f5;
+  --bg-card: #ffffff;
+  --bg-pill: #edeef3;
+  --bg-pill-active: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --bg-input: #ffffff;
+  --border-input: #cbd5e1;
+  --arrow-bg: #555555;
+  --arrow-disabled: #b4b8c4;
+  --shadow-card: rgba(0, 0, 0, 0.05);
+}
+
+/* Dark Mode Overrides */
+.dark-theme {
+  --bg-viewport: #0f172a;
+  --bg-card: #1e293b;
+  --bg-pill: #334155;
+  --bg-pill-active: #f8fafc;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --bg-input: #334155;
+  --border-input: #475569;
+  --arrow-bg: #475569;
+  --arrow-disabled: #334155;
+  --shadow-card: rgba(0, 0, 0, 0.3);
+}
+
+/* --- Core Container Alignment --- */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: var(--bg-viewport);
+  padding: 24px;
+  box-sizing: border-box;
+  transition: background-color 0.3s ease;
+}
+
+.login-card {
+  background-color: var(--bg-card);
+  border-radius: 16px;
+  padding: 32px;
+  width: 100%;
+  max-width: 460px;
+  box-shadow: 0 10px 25px -5px var(--shadow-card), 0 8px 10px -6px var(--shadow-card);
+  box-sizing: border-box;
+  direction: rtl;
+  position: relative; /* Essential for absolute positioning the theme toggle button */
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* --- Theme Toggle Button --- */
+.theme-toggle-btn {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, transform 0.2s;
+  z-index: 50; /* 🔒 Forces the button to stay on the top layer */
+}
+
+.theme-toggle-btn:hover {
+  background-color: var(--bg-pill);
+  transform: scale(1.05);
+}
+
+/* Styled specifically to match your theme colors beautifully */
+.theme-icon {
+  width: 22px;
+  height: 22px;
+}
+
+/* --- Navigation Pill Toggle --- */
+.auth-toggle-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 28px;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.auth-toggle-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-pill);
+  border-radius: 30px;
+  padding: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.toggle-options-container {
+  display: flex;
+  flex: 1;
+  margin: 0 4px;
+}
+
+.toggle-btn-option {
+  flex: 1;
+  text-align: center;
+  padding: 8px 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 20px;
+  border: none;
+  background: transparent;
+  transition: all 0.25s ease;
+}
+
+.toggle-btn-option.active {
+  background-color: var(--bg-pill-active);
+  color: #0f172a; /* Keeps text dark on the white pill slider */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.toggle-arrow {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--arrow-bg);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.toggle-arrow.disabled {
+  background-color: var(--arrow-disabled);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* --- Header Alignment --- */
+.login-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.login-header h2 {
+  color: var(--text-main);
+  margin: 12px 0 4px 0;
+  font-size: 24px;
+}
+
+.login-header p {
+  color: var(--text-muted);
+  margin: 0;
+  font-size: 14px;
+}
+
+.login-shield-icon {
+  margin: 0 auto;
+  display: block;
+}
+
+/* --- Form Input Fields --- */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-group label {
+  color: var(--text-main);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: right;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100% !important;
+  padding: 12px;
+  background-color: var(--bg-input) !important;
+  border: 1px solid var(--border-input);
+  border-radius: 8px;
+  color: var(--text-main) !important;
+  font-size: 15px;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  left: 12px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0;
+}
+
+/* --- Action Button & Footer --- */
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background-color 0.2s;
+}
+
+.login-btn:hover {
+  background-color: #1d4ed8;
+}
+
+.login-btn:disabled {
+  background-color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.login-error {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 24px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.signup-link {
+  color: #2563eb;
+  cursor: pointer;
+  margin-right: 6px;
+  font-weight: 600;
+}
+
+.signup-link:hover {
+  text-decoration: underline;
+}

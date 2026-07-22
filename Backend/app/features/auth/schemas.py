@@ -38,6 +38,36 @@ class UserCreate(UserBase):
         if len(v) < 8 or not re.search(r"[A-Z]", v) or not re.search(r"\d", v):
             raise ValueError("Password must be >= 8 chars, contain an uppercase letter and a digit")
         return v
+
+class OTPRequestSchema(BaseModel):
+    phone_number: str
+    email: EmailStr
+
+    @field_validator("phone_number")
+    @classmethod
+    def validate_phone(cls, v: str) -> str:
+        return normalize_israeli_phone_number(v)
+
+class UserRegisterVerifySchema(BaseModel):
+    full_name: str
+    email: EmailStr
+    phone_number: str
+    password: str
+    user_type: UserType
+    otp_code: str
+
+    @field_validator("phone_number")
+    @classmethod
+    def validate_phone(cls, v: str) -> str:
+        return normalize_israeli_phone_number(v)
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        if len(v) < 8 or not re.search(r"[A-Z]", v) or not re.search(r"\d", v):
+            raise ValueError("Password must be >= 8 chars, contain an uppercase letter and a digit")
+        return v
+
         
 class UserResponse(UserBase):
     model_config = ConfigDict(from_attributes=True)

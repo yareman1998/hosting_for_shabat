@@ -168,7 +168,7 @@ export function useAppLogic() {
         ) : userRole ? (
           <Navigate to="/" replace />
         ) : (
-          <Register />
+          <Register onLoginSuccess={handleLoginSuccess} />
         )
       },
       {

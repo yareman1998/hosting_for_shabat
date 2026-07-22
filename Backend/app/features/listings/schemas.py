@@ -18,18 +18,31 @@ class KashrutOptionResponse(BaseModel):
     value: str
     label: str
 
+class UserSimpleResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: uuid.UUID
+    full_name: str
+    email: str
+    phone_number: str
+
 class HostSearchResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     
     id: uuid.UUID
+    user_id: uuid.UUID
     city: str
     neighborhood: Optional[str] = None
     kashrut_level: str
     religious_orientation: Optional[str] = None
     availability_windows: Optional[str] = None
-    match_score: Optional[int] = None  # יאוכלס אוטומטית אם קיים באובייקט
+    emergency_available: Optional[bool] = False
+    match_score: Optional[int] = None
+    user: Optional[UserSimpleResponse] = None
 
     @computed_field
     @property
     def host_name(self) -> str:
-        return self.user.full_name if getattr(self, "user", None) else "Unknown Host"
+        if self.user and self.user.full_name:
+            return self.user.full_name
+        return "מארח ללא שם"

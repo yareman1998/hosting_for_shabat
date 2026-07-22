@@ -124,10 +124,12 @@ def verify_guest_status(user_id: str, payload: GuestVerifyUpdateRequest, admin_u
 @router.get("/bookings", response_model=AdminBookingsResponse)
 def get_bookings_moderation(admin_user: User = Depends(require_admin), db: Session = Depends(get_db)):
     matches = db.query(Match).options(
-        joinedload(Match.guest_post),
+        joinedload(Match.guest_post).joinedload(GuestPost.guest_profile).joinedload(GuestProfile.user),
         joinedload(Match.host_profile).joinedload(HostProfile.user)
     ).all()
-    posts = db.query(GuestPost).all()
+    posts = db.query(GuestPost).options(
+        joinedload(GuestPost.guest_profile).joinedload(GuestProfile.user)
+    ).all()
 
     return {"matches": matches, "posts": posts}
 

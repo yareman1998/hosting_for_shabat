@@ -38,8 +38,9 @@ export default function AdminListings() {
 
   // Filter Logic
   const filteredHosts = hosts.filter(host => {
+    const hostName = host.host_name || host.user?.full_name || '';
     const matchesSearch = 
-      host.host_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      hostName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       host.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       host.neighborhood?.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -91,7 +92,7 @@ export default function AdminListings() {
       >
         {filteredHosts.map(host => (
           <tr key={host.id}>
-            <td className="text-semibold">{host.host_name}</td>
+            <td className="text-semibold">{host.host_name || host.user?.full_name || 'מארח ללא שם'}</td>
             <td>
               {host.city} {host.neighborhood ? `(${host.neighborhood})` : ''}
             </td>

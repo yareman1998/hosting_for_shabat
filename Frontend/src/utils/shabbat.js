@@ -20,7 +20,7 @@ export function formatHebrewToday(date = new Date()) {
 /**
  * Calculate the Date object for the upcoming Friday.
  */
-function getUpcomingFriday(date = new Date()) {
+export function getUpcomingFriday(date = new Date()) {
   const target = new Date(date.getTime());
   const day = target.getDay(); // 0: Sun, 5: Fri, 6: Sat
 
@@ -171,5 +171,36 @@ export async function getShabbatInfo(userCity = 'ירושלים') {
       fridayDateFormatted,
       cityName: coords.displayName || userCity
     };
+  }
+}
+
+/**
+ * Format upcoming Friday date as a localized Hebrew string.
+ * @param {string|Date} [dateInput] - Optional date to format, defaults to calculating upcoming Friday.
+ * @returns {string} Formatted Friday date string
+ */
+export function getUpcomingFridayDateStr(dateInput) {
+  let d;
+  if (dateInput) {
+    try {
+      d = new Date(dateInput);
+    } catch (e) {
+      console.warn('Invalid date format:', e);
+      d = getUpcomingFriday();
+    }
+  } else {
+    d = getUpcomingFriday();
+  }
+
+  try {
+    return d.toLocaleDateString('he-IL', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  } catch (e) {
+    console.warn('Error formatting date:', e);
+    return '';
   }
 }

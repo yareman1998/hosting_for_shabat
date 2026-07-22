@@ -6,29 +6,13 @@ import HostDetailsHero from '../../components/HostDetails/HostDetailsHero';
 import HostDetailsStats from '../../components/HostDetails/HostDetailsStats';
 import HostDetailsAbout from '../../components/HostDetails/HostDetailsAbout';
 import HostDetailsSidebar from '../../components/HostDetails/HostDetailsSidebar';
+import { getUpcomingFridayDateStr } from '../../utils/shabbat';
 import './HostDetails.css';
 
 const DEFAULT_IMAGE =
   'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&h=400&fit=crop&auto=format';
 
 const CACHE_KEY = 'shabbat_hosts_cache';
-
-function getUpcomingFridayDateStr(dateInput) {
-  if (dateInput) {
-    try {
-      const d = new Date(dateInput);
-      return d.toLocaleDateString('he-IL', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      });
-    } catch (e) {
-      console.warn('Invalid date format:', e);
-    }
-  }
-  return 'שישי, 18 ביולי 2025';
-}
 
 export default function HostDetails() {
   const { id } = useParams();
@@ -76,30 +60,28 @@ export default function HostDetails() {
           const mapped = {
             id: found.id,
             user_id: found.user_id,
-            full_name: found.host_name || found.user?.full_name || 'משפחת כהן',
-            city: found.city || 'מודיעין',
-            kashrut_level: found.kashrut_level || 'MEHADRIN',
+            full_name: found.host_name || found.user?.full_name || '',
+            city: found.city || '',
+            kashrut_level: found.kashrut_level || '',
             has_lodging: found.availability_windows
               ? found.availability_windows.includes('לינה')
-              : true,
-            available_spots: found.available_spots !== undefined ? found.available_spots : 2,
-            total_spots: found.total_spots || 6,
+              : false,
+            available_spots: found.available_spots !== undefined ? found.available_spots : 0,
+            total_spots: found.total_spots || 0,
             match_percentage:
               found.match_score !== undefined && found.match_score !== null
                 ? found.match_score
-                : 96,
-            biography:
-              found.free_text_notes ||
-              'משפחה חמה ומסבירת פנים עם 3 ילדים. שבת ביתית ומשפחתית, אוכל ביתי מעולה.',
+                : null,
+            biography: found.free_text_notes || '',
             tags: [
               found.neighborhood,
               found.religious_orientation,
-              found.kashrut_level === 'MEHADRIN' ? 'מהדרין' : 'כשר'
+              found.kashrut_level ? (found.kashrut_level === 'MEHADRIN' ? 'מהדרין' : 'כשר') : ''
             ].filter(Boolean),
             image_url: found.image_url || null,
-            rating: found.rating || 4.9,
-            reviews_count: found.reviews_count || 47,
-            phone_number: found.phone_number || found.user?.phone_number || '054-1234567'
+            rating: found.rating || null,
+            reviews_count: found.reviews_count || 0,
+            phone_number: found.phone_number || found.user?.phone_number || ''
           };
           setHost(mapped);
         }
@@ -142,18 +124,18 @@ export default function HostDetails() {
   };
 
   // Dynamic values with fallbacks matching exact mockup requirements
-  const hostName = host?.full_name || host?.host_name || 'משפחת כהן';
-  const city = host?.city || 'מודיעין';
+  const hostName = host?.full_name || host?.host_name || '';
+  const city = host?.city || '';
   const imageUrl = !imageError && host?.image_url ? host.image_url : DEFAULT_IMAGE;
-  const matchPercentage = host?.match_percentage ?? host?.match_score ?? 96;
-  const hasLodging = host?.has_lodging !== undefined ? host.has_lodging : true;
+  const matchPercentage = host?.match_percentage ?? host?.match_score ?? 0;
+  const hasLodging = host?.has_lodging !== undefined ? host.has_lodging : false;
 
-  const availableSpots = host?.available_spots !== undefined ? host.available_spots : 2;
-  const totalSpots = host?.total_spots || 6;
+  const availableSpots = host?.available_spots !== undefined ? host.available_spots : 0;
+  const totalSpots = host?.total_spots || 0;
   const spotsFormatted = `${availableSpots}/${totalSpots}`;
 
   const getKashrutLabel = (level) => {
-    if (!level) return 'מהדרין';
+    if (!level) return '';
     const norm = String(level).toLowerCase();
     if (norm.includes('mehadrin') || norm.includes('מהדרין') || norm.includes('glatt')) return 'מהדרין';
     if (norm.includes('kosher') || norm.includes('כשר')) return 'כשר';
@@ -161,19 +143,13 @@ export default function HostDetails() {
   };
   const kashrutText = getKashrutLabel(host?.kashrut_level);
 
-  const biography =
-    host?.biography ||
-    host?.free_text_notes ||
-    'משפחה חמה ומסבירת פנים עם 3 ילדים. שבת ביתית ומשפחתית, אוכל ביתי מעולה.';
+  const biography = host?.biography || host?.free_text_notes || '';
 
-  const tags =
-    host?.tags && host.tags.length > 0
-      ? host.tags
-      : ['ילדים', 'חם ומשפחתי', 'אוכל ביתי'];
+  const tags = host?.tags && host.tags.length > 0 ? host.tags : [];
 
-  const rating = host?.rating !== undefined && host?.rating !== null ? Number(host.rating).toFixed(1) : '4.9';
-  const reviewsCount = host?.reviews_count ?? host?.review_count ?? 47;
-  const phone = host?.phone_number || host?.phone || '054-1234567';
+  const rating = host?.rating !== undefined && host?.rating !== null ? Number(host.rating).toFixed(1) : '0.0';
+  const reviewsCount = host?.reviews_count ?? host?.review_count ?? 0;
+  const phone = host?.phone_number || host?.phone || '';
 
   const upcomingFridayDate = getUpcomingFridayDateStr(host?.shabbat_date);
 

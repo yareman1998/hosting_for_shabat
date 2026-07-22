@@ -6,10 +6,10 @@ import './HostCard.css';
 export default function HostCard({ host, onBookingRequest }) {
   if (!host) return null;
 
-  const fullName = host.full_name || host.host_name || 'משפחת כהן';
+  const fullName = host.full_name || host.host_name ;
   const rating = host.rating !== undefined && host.rating !== null ? Number(host.rating).toFixed(1) : '4.9';
   const reviewsCount = host.reviews_count ?? host.review_count ?? 47;
-  const city = host.city || 'מודיעין';
+  const city = host.city ;
   const availableSpots = host.available_spots !== undefined && host.available_spots !== null ? host.available_spots : 2;
   const tags = host.tags && host.tags.length > 0 ? host.tags : ['ילדים', 'חם ומשפחתי'];
 

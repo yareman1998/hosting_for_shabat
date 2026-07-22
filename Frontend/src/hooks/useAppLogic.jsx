@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { authApi } from '../api/api'
 import Layout from '../components/Common/Layout/Layout'
 import HomePage from '../pages/Home/Home'
+import HomeGuest from '../pages/Home/HomeGuest/HomeGuest' // <-- Added HomeGuest import
 import FindHost from '../pages/FindHost/FindHost'
 import HostDetails from '../pages/HostDetails/HostDetails'
 import MyRequests from '../pages/MyRequests/MyRequests'
@@ -20,7 +21,6 @@ import AdminDashboard from '../components/Admin/AdminDashboard'
 import AdminUsers from '../components/Admin/AdminUsers'
 import AdminBookings from '../components/Admin/AdminBookings'
 import AdminListings from '../components/Admin/AdminListings'
-
 
 import ProtectedRoute from '../components/Common/ProtectedRoute'
 import Loading from '../components/Common/Loading/Loading'
@@ -82,7 +82,12 @@ export function useAppLogic() {
         children: [
           {
             index: true,
-            element: userRole === 'admin' ? <Navigate to="/admin" replace /> : <HomePage />
+            // <-- Updated routing logic for the homepage
+            element: userRole === 'admin' 
+              ? <Navigate to="/admin" replace /> 
+              : userRole === 'guest' 
+                ? <HomeGuest /> 
+                : <HomePage />
           },
           {
             path: 'profile',

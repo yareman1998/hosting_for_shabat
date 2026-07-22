@@ -1,0 +1,654 @@
+/* GuestHome.css */
+.guest-home-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 100%;
+  padding-bottom: 60px;
+}
+
+/* =========================================
+   1. HERO SECTION
+========================================= */
+.gh-hero {
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  border-radius: 24px;
+  padding: 48px 24px;
+  text-align: center;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.15);
+}
+
+/* Optional abstract background circles for the hero */
+.gh-hero::before, .gh-hero::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+}
+.gh-hero::before { width: 300px; height: 300px; top: -100px; right: -50px; }
+.gh-hero::after { width: 200px; height: 200px; bottom: -50px; left: -50px; }
+
+.gh-hero-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.gh-hero-subtitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #bfdbfe;
+}
+
+.gh-hero-title {
+  font-size: 42px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.gh-hero-info {
+  font-size: 16px;
+  color: #e0e7ff;
+  margin: 0 0 16px 0;
+}
+
+.gh-hero-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.gh-btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: white;
+  color: #1e3a8a;
+  border: none;
+  border-radius: 99px;
+  padding: 12px 28px;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.gh-btn-primary:hover { transform: translateY(-2px); }
+
+.gh-btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 99px;
+  padding: 12px 28px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background-color 0.2s;
+}
+.gh-btn-secondary:hover { background-color: rgba(255, 255, 255, 0.25); }
+
+
+/* =========================================
+   2. SUCCESS ALERT
+========================================= */
+.gh-alert-success {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 16px;
+  padding: 20px 24px;
+}
+
+.gh-alert-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.gh-alert-icon-wrapper {
+  background-color: #dcfce7;
+  color: #16a34a;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gh-alert-text h4 {
+  margin: 0 0 4px 0;
+  color: #166534;
+  font-size: 16px;
+}
+
+.gh-alert-text p {
+  margin: 0;
+  color: #15803d;
+  font-size: 14px;
+}
+
+.gh-alert-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #16a34a;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+
+/* =========================================
+   3. STATS ROW
+========================================= */
+.gh-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.gh-stat-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.gh-stat-card h2 {
+  font-size: 32px;
+  font-weight: 800;
+  color: #334155;
+  margin: 0 0 8px 0;
+}
+
+.gh-stat-card p {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Distinct number colors */
+.gh-stat-card:nth-child(1) h2 { color: #1e293b; }
+.gh-stat-card:nth-child(2) h2 { color: #10b981; }
+.gh-stat-card:nth-child(3) h2 { color: #d946ef; }
+.gh-stat-card:nth-child(4) h2 { color: #f59e0b; }
+
+.dark-theme .gh-stat-card { background-color: #1e293b; border-color: #334155; }
+
+
+/* =========================================
+   4. AI SECTION
+========================================= */
+.gh-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.gh-section-header h3 {
+  font-size: 20px;
+  color: var(--text-h);
+  margin: 0;
+}
+
+.gh-badge-new {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #eff6ff;
+  color: #2563eb;
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.gh-ai-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+/* Chat Side */
+.gh-ai-chat {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
+
+.gh-chat-header {
+  background-color: #1e3a8a;
+  padding: 16px 20px;
+  color: white;
+}
+
+.gh-chat-agent-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gh-agent-avatar {
+  background-color: rgba(255,255,255,0.2);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gh-chat-agent-info h4 { margin: 0; font-size: 15px; }
+.gh-chat-agent-info p { margin: 2px 0 0 0; font-size: 12px; color: #bfdbfe; display: flex; align-items: center; gap: 6px; }
+
+.gh-online-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #4ade80;
+  border-radius: 50%;
+}
+
+.gh-chat-body {
+  padding: 24px;
+  flex: 1;
+  background-color: #fafaf9;
+}
+
+.gh-chat-message {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.gh-agent-avatar-small {
+  background-color: #1e3a8a;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.gh-message-bubble {
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  padding: 16px;
+  border-radius: 16px;
+  border-top-right-radius: 4px;
+  font-size: 14px;
+  color: #334155;
+  line-height: 1.6;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.gh-chat-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-right: 40px; /* Aligns with message text */
+}
+
+.gh-chat-suggestions button {
+  background-color: white;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  border-radius: 99px;
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.gh-chat-suggestions button:hover {
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.gh-chat-input-area {
+  padding: 16px 24px;
+  background: white;
+  border-top: 1px solid #e2e8f0;
+}
+
+.gh-input-wrapper {
+  display: flex;
+  align-items: center;
+  background-color: #f1f5f9;
+  border-radius: 99px;
+  padding: 6px;
+}
+
+.gh-input-wrapper input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 10px 16px;
+  font-size: 14px;
+  outline: none;
+  color: #334155;
+}
+
+.gh-send-btn {
+  background-color: #94a3b8;
+  color: white;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.gh-input-wrapper input:focus + .gh-send-btn {
+  background-color: #2563eb;
+}
+
+/* Features Side */
+.gh-ai-features {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
+
+.gh-features-icon {
+  margin-bottom: 16px;
+}
+
+.gh-ai-features h4 {
+  margin: 0 0 24px 0;
+  font-size: 18px;
+  color: #0f172a;
+}
+
+.gh-features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  text-align: right;
+}
+
+.gh-features-list li {
+  font-size: 14px;
+  color: #475569;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.gh-check {
+  color: #10b981;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.dark-theme .gh-ai-chat, .dark-theme .gh-ai-features, .dark-theme .gh-chat-input-area {
+  background-color: #1e293b; border-color: #334155;
+}
+.dark-theme .gh-chat-body { background-color: #0f172a; }
+.dark-theme .gh-message-bubble { background-color: #1e293b; color: #f8fafc; border-color: #334155; }
+.dark-theme .gh-chat-suggestions button { background-color: transparent; border-color: #475569; color: #cbd5e1; }
+.dark-theme .gh-input-wrapper { background-color: #0f172a; }
+.dark-theme .gh-input-wrapper input { color: white; }
+
+/* =========================================
+   5. FEATURED HOSTS
+========================================= */
+.gh-link-all {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.gh-hosts-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.gh-host-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+.gh-host-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+}
+
+.gh-card-image-wrapper {
+  position: relative;
+  height: 160px;
+}
+
+.gh-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gh-card-badges {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.gh-badge-right-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.gh-badge-night, .gh-badge-kosher, .gh-badge-match {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  backdrop-filter: blur(4px);
+}
+
+.gh-badge-night { background-color: rgba(30, 58, 138, 0.85); color: white; }
+.gh-badge-kosher { background-color: rgba(255, 255, 255, 0.9); color: #7e22ce; }
+.gh-badge-match { background-color: #10b981; color: white; display: flex; align-items: center; gap: 4px; }
+
+.gh-card-content {
+  padding: 16px;
+}
+
+.gh-card-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.gh-card-title-row h4 {
+  margin: 0;
+  font-size: 16px;
+  color: #0f172a;
+}
+
+.gh-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+.gh-reviews { color: #94a3b8; font-weight: 500; }
+
+.gh-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #64748b;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.gh-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 12px;
+}
+
+.gh-tags {
+  display: flex;
+  gap: 6px;
+}
+
+.gh-tag {
+  background-color: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.gh-spots-text {
+  color: #d97706;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.dark-theme .gh-host-card { background-color: #1e293b; border-color: #334155; }
+.dark-theme .gh-card-title-row h4, .dark-theme .gh-rating { color: #f8fafc; }
+.dark-theme .gh-card-footer { border-color: #334155; }
+.dark-theme .gh-tag { background-color: #0f172a; color: #94a3b8; }
+
+
+/* =========================================
+   6. HOW IT WORKS
+========================================= */
+.gh-how-it-works {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.gh-how-it-works h3 {
+  font-size: 24px;
+  color: var(--text-h);
+  margin-bottom: 40px;
+}
+
+.gh-steps-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  position: relative;
+}
+
+/* Connecting Line */
+.gh-steps-container::before {
+  content: '';
+  position: absolute;
+  top: 32px;
+  left: 15%;
+  right: 15%;
+  height: 2px;
+  background-color: #e2e8f0;
+  z-index: 1;
+}
+.dark-theme .gh-steps-container::before { background-color: #334155; }
+
+.gh-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+.gh-step-number {
+  width: 64px;
+  height: 64px;
+  background-color: #1e3a8a;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 20px;
+  border: 4px solid var(--bg); /* To cover the connecting line */
+}
+
+.gh-step h4 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: var(--text-h);
+}
+
+.gh-step p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+  max-width: 250px;
+  line-height: 1.5;
+}
+
+/* Responsive Overrides */
+@media (max-width: 1024px) {
+  .gh-stats-row { grid-template-columns: repeat(2, 1fr); }
+  .gh-ai-grid { grid-template-columns: 1fr; }
+  .gh-hosts-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .gh-hero-title { font-size: 32px; }
+  .gh-stats-row { grid-template-columns: 1fr; }
+  .gh-hosts-grid { grid-template-columns: 1fr; }
+  .gh-steps-container { grid-template-columns: 1fr; gap: 32px; }
+  .gh-steps-container::before { display: none; }
+}

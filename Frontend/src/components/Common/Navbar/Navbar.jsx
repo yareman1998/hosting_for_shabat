@@ -1,86 +1,99 @@
 import { NavLink } from 'react-router-dom';
-import { HomeIcon, FindHostIcon, MyRequestsIcon, RequestsBoardIcon, ProfileIcon, Logo, BellIcon, AdminIcon, UsersIcon } from '../Icons';
+import {
+  House,
+  Search,
+  FileText,
+  ClipboardList,
+  LayoutDashboard,
+  Users,
+  Building,
+  Inbox,
+  User,
+  Bell
+} from 'lucide-react';
+import { Logo } from '../Icons';
 import './Navbar.css';
 
 export default function Navbar({ userRole }) {
-
   // 1. Array containing link data, paths, labels, and icons
   const linksConfig = [
     {
       path: '/',
       label: 'בית',
       roles: ['guest', 'host'],
-      icon: <HomeIcon className="nav-icon" />
+      icon: <House className="w-4 h-4 nav-icon" />
     },
     {
       path: '/find-host',
       label: 'מצא מארח',
       roles: ['guest'],
-      icon: <FindHostIcon className="nav-icon" />
+      icon: <Search className="w-4 h-4 nav-icon" />
     },
     {
       path: '/my-requests',
       label: 'הבקשות שלי',
       roles: ['guest'],
-      hasBadge: true, // Special flag for the orange notification counter
-      icon: <MyRequestsIcon className="nav-icon" />
+      hasBadge: true,
+      icon: <FileText className="w-4 h-4 nav-icon" />
     },
     {
       path: '/requests-board',
       label: 'לוח בקשות',
       roles: ['host'],
-      icon: <RequestsBoardIcon className="nav-icon" />
+      icon: <ClipboardList className="w-4 h-4 nav-icon" />
     },
     {
       path: '/admin',
       end: true,
       label: 'לוח בקרה',
       roles: ['admin'],
-      icon: <AdminIcon className="nav-icon" />
+      icon: <LayoutDashboard className="w-4 h-4 nav-icon" />
     },
     {
       path: '/admin/users',
       label: 'ניהול משתמשים',
       roles: ['admin'],
-      icon: <UsersIcon className="nav-icon" />
+      icon: <Users className="w-4 h-4 nav-icon" />
     },
     {
       path: '/admin/listings',
       label: 'דירות ומארחים',
       roles: ['admin'],
-      icon: <HomeIcon className="nav-icon" />
+      icon: <Building className="w-4 h-4 nav-icon" />
     },
     {
       path: '/admin/bookings',
       label: 'בקשות',
       roles: ['admin'],
-      icon: <MyRequestsIcon className="nav-icon" />
+      icon: <Inbox className="w-4 h-4 nav-icon" />
     },
     {
       path: '/profile',
       label: 'פרופיל',
       roles: ['guest', 'host'],
-      icon: <ProfileIcon className="nav-icon" />
+      icon: <User className="w-4 h-4 nav-icon" />
     }
   ];
 
   // 2. Filter links instantly based on what role is passed into the header
   const allowedLinks = linksConfig.filter(link => link.roles.includes(userRole));
 
-  // 3. Clean mapping function
+  // 3. Clean mapping function with exact active / non-active button classes
   function roots() {
     return allowedLinks.map((link) => (
       <li key={link.path}>
         <NavLink
           to={link.path}
           end={link.end}
-          className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}
+          className={({ isActive }) =>
+            isActive
+              ? "flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all relative bg-secondary text-primary nav-item active"
+              : "flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all relative text-muted-foreground hover:text-foreground hover:bg-secondary/50 nav-item"
+          }
         >
-          <div className={link.hasBadge ? "nav-item-badge-wrapper" : ""}>
-            {link.icon}
-            <span>{link.label}</span>
-            {link.hasBadge && <span className="requests-badge">1</span>}
-          </div>
+          {link.icon}
+          <span>{link.label}</span>
+          {link.hasBadge && <span className="requests-badge">1</span>}
         </NavLink>
       </li>
     ));
@@ -126,7 +139,7 @@ export default function Navbar({ userRole }) {
       {/* NOTIFICATIONS & USER AVATAR */}
       <div className="navbar-left">
         <div className="notification-bell">
-          <BellIcon className="" />
+          <Bell className="w-5 h-5" />
           <span className="bell-badge"></span>
         </div>
         <div className="profile-circle">{getInitials()}</div>

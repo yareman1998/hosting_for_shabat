@@ -95,8 +95,24 @@ def get_current_user(token: Optional[str] = Depends(oauth2_scheme), db: Session 
                 is_email_verified=True,
                 is_phone_verified=True,
             )
-        raise exc
     return user
+
+
+def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> Optional[User]:
+    """Optional authentication dependency that returns User if valid token is present, else None."""
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        user_id: str = payload.get("sub")
+        if not user_id:
+            return None
+        return db.query(User).options(
+            joinedload(User.host_profile),
+            joinedload(User.guest_profile)
+        ).filter(User.id == uuid.UUID(user_id)).first()
+    except Exception:
+        return None
 
 
 class RoleChecker:

@@ -1,30 +1,37 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { EyeIcon, EyeOffIcon } from '../../components/Common/Icons';
+import { Sun, Moon, Shield, Eye, EyeOff } from 'lucide-react';
 import './Login.css';
 
 export default function Login({ onLoginSuccess }) {
-  // Reverted key back to 'username' to satisfy the backend schema
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Initialize theme from localStorage, default to light mode
+  const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
+
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isLoginActive = location.pathname === '/login' || location.pathname === '/';
+
+  // Synchronize layout dark-theme classes
+  useEffect(() => {
+    if (isDark) {
+      document.body.classList.add('dark-theme');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.body.classList.remove('dark-theme');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDark]);
 
   const fieldsConfig = [
-    {
-      id: 'username', // Changed back to 'username'
-      label: 'כתובת אימייל',
-      type: 'email',
-      placeholder: 'name@example.com',
-    },
-    {
-      id: 'password',
-      label: 'סיסמה',
-      type: 'password',
-      placeholder: '••••••••',
-    }
+    { id: 'username', label: 'כתובת אימייל', type: 'email', placeholder: 'name@example.com' },
+    { id: 'password', label: 'סיסמה', type: 'password', placeholder: '••••••••' }
   ];
 
   const handleChange = (e) => {
@@ -38,39 +45,17 @@ export default function Login({ onLoginSuccess }) {
     setLoading(true);
 
     try {
-      // Sends payload containing { username, password }
       const response = await axios.post('http://localhost:8000/api/auth/login', formData, {
         headers: { 'Content-Type': 'application/json' }
       });
 
       if (response.data && response.data.access_token) {
         localStorage.setItem('token', response.data.access_token);
-        
-        if (onLoginSuccess) {
-          await onLoginSuccess();
-        }
-        
+        if (onLoginSuccess) await onLoginSuccess();
         navigate('/');
-      } else {
-        setError('שגיאה בקבלת מפתח התחברות מהשרת.');
       }
     } catch (err) {
-      console.error("Login request failed:", err);
-      
-      if (err.response && err.response.data && err.response.data.detail) {
-        const detail = err.response.data.detail;
-        
-        if (typeof detail === 'string') {
-          setError(detail);
-        } else if (Array.isArray(detail)) {
-          const parsedErrors = detail.map(errObj => `${errObj.loc[1] || 'קלט'}: ${errObj.msg}`).join(', ');
-          setError(parsedErrors);
-        } else {
-          setError('נתונים לא תקינים נשלחו לשרת.');
-        }
-      } else {
-        setError('כתובת אימייל או סיסמה שגויים. אנא נסה שוב.');
-      }
+      setError('כתובת אימייל או סיסמה שגויים.');
     } finally {
       setLoading(false);
     }
@@ -96,7 +81,7 @@ export default function Login({ onLoginSuccess }) {
               onClick={() => setShowPassword(!showPassword)}
               aria-label={showPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
             >
-              {showPassword ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
         ) : (
@@ -116,10 +101,60 @@ export default function Login({ onLoginSuccess }) {
   return (
     <div className="login-container">
       <div className="login-card">
+        {/* Floating Theme Switcher Button */}
+        <button
+          type="button"
+          className="theme-toggle-btn"
+          onClick={() => setIsDark(!isDark)}
+          title={isDark ? "מצב בהיר" : "מצב כהה"}
+        >
+          {isDark ? (
+            <Sun className="theme-icon" size={24} color="#eab308" />
+          ) : (
+            <Moon className="theme-icon" size={24} color="#64748b" />
+          )}
+        </button>
+
+        {/* Navigation Switcher Pill */}
+        <div className="auth-toggle-wrapper">
+          <div className="auth-toggle-pill">
+            <button
+              type="button"
+              className={`toggle-arrow ${!isLoginActive ? 'disabled' : ''}`}
+              onClick={() => navigate('/register')}
+              disabled={!isLoginActive}
+            >
+              ‹
+            </button>
+            <div className="toggle-options-container">
+              <button
+                type="button"
+                className={`toggle-btn-option ${!isLoginActive ? 'active' : ''}`}
+                onClick={() => navigate('/register')}
+              >
+                הרשמה
+              </button>
+              <button
+                type="button"
+                className={`toggle-btn-option ${isLoginActive ? 'active' : ''}`}
+                onClick={() => navigate('/login')}
+              >
+                התחברות
+              </button>
+            </div>
+            <button
+              type="button"
+              className={`toggle-arrow ${isLoginActive ? 'disabled' : ''}`}
+              onClick={() => navigate('/login')}
+              disabled={isLoginActive}
+            >
+              ›
+            </button>
+          </div>
+        </div>
+
         <div className="login-header">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="#1d4ed8" className="login-shield-icon">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
+          <Shield size={48} color="#2563eb" className="login-shield-icon" fill="#2563eb" />
           <h2>שבת שלום</h2>
           <p>מערכת אירוח חיילים בסופי שבוע</p>
         </div>

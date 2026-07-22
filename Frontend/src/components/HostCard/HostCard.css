@@ -1,0 +1,232 @@
+/* Host Card Styles - Precise Match for Card Design */
+
+.host-card-button {
+  background-color: var(--bg-card, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 1rem;
+  overflow: hidden;
+  text-align: right;
+  width: 100%;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0;
+  outline: none;
+  font-family: inherit;
+  color: inherit;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.host-card-button:hover {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  transform: translateY(-2px);
+  border-color: var(--primary-blue-border, #bfdbfe);
+}
+
+.host-card-button:active {
+  transform: scale(0.99);
+}
+
+/* 1. Media Top Section */
+.card-media-wrapper {
+  position: relative;
+  height: 11rem; /* 176px - h-44 */
+  width: 100%;
+  overflow: hidden;
+  background-color: var(--bg-secondary, #f8fafc);
+}
+
+.card-media-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.host-card-button:hover .card-media-img {
+  transform: scale(1.05);
+}
+
+.card-media-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.4), transparent);
+  pointer-events: none;
+}
+
+/* Badges */
+.card-badges-right {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-end;
+  z-index: 10;
+}
+
+.card-badge-kashrut {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  border: 1px solid #e9d5ff;
+  background-color: #f3e8ff;
+  color: #7e22ce;
+}
+
+.card-badge-match {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.match-emerald,
+.bg-emerald-500 {
+  background-color: #10b981 !important;
+}
+
+.match-blue,
+.bg-blue-500 {
+  background-color: #3b82f6 !important;
+}
+
+.match-amber,
+.bg-amber-500 {
+  background-color: #f59e0b !important;
+}
+
+.card-badge-lodging {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: rgba(30, 41, 59, 0.9);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  backdrop-filter: blur(4px);
+  z-index: 10;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+/* 2. Card Content Body */
+.card-body-container {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.card-row-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.card-title-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-h, #0f172a);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.card-rating-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.card-rating-score {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-h, #0f172a);
+}
+
+.card-rating-count {
+  font-size: 0.75rem;
+  color: var(--text-muted, #64748b);
+}
+
+.card-row-location {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  color: var(--text-muted, #64748b);
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.card-row-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-spots-text {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.card-spots-text.text-amber {
+  color: #d97706;
+}
+
+.card-spots-text.text-red {
+  color: #ef4444;
+}
+
+.card-tags-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: flex-end;
+}
+
+.card-tag-pill {
+  font-size: 0.75rem;
+  background-color: var(--bg-secondary, #f1f5f9);
+  color: var(--text-muted, #64748b);
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+
+.star-icon-amber {
+  width: 1rem;
+  height: 1rem;
+  fill: #f59e0b;
+  color: #f59e0b;
+}
+
+.location-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.badge-icon-xs {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+

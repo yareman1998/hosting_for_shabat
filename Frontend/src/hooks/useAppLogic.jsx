@@ -21,6 +21,7 @@ import AdminBookings from '../pages/Admin/AdminBookings'
 import AdminListings from '../pages/Admin/AdminListings'
 
 import ProtectedRoute from '../components/Common/ProtectedRoute'
+import Loading from '../components/Common/Loading/Loading'
 
 export function useAppLogic() {
   const [userRole, setUserRole] = useState(null);
@@ -74,7 +75,7 @@ export function useAppLogic() {
     return createBrowserRouter([
       {
         path: '/',
-        element: <Layout userRole={userRole} />,
+        element: <Layout userRole={userRole} loading={loadingAuth} />,
         errorElement: <NotFound />,
         children: [
           {
@@ -134,11 +135,23 @@ export function useAppLogic() {
       },
       {
         path: '/login',
-        element: userRole ? <Navigate to="/" replace /> : <Login onLoginSuccess={handleLoginSuccess} />
+        element: loadingAuth ? (
+          <Loading />
+        ) : userRole ? (
+          <Navigate to="/" replace />
+        ) : (
+          <Login onLoginSuccess={handleLoginSuccess} />
+        )
       },
       {
         path: '/register',
-        element: userRole ? <Navigate to="/" replace /> : <Register />
+        element: loadingAuth ? (
+          <Loading />
+        ) : userRole ? (
+          <Navigate to="/" replace />
+        ) : (
+          <Register />
+        )
       },
       {
         path: '*',

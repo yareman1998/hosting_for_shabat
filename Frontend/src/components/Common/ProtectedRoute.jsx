@@ -1,12 +1,9 @@
 import { Navigate } from 'react-router-dom';
+import Loading from './Loading/Loading';
 
 export default function ProtectedRoute({ children, allowedRoles, userRole, loading }) {
   if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <div style={{ fontSize: '1.2rem', color: '#666' }}>טוען נתונים...</div>
-      </div>
-    );
+    return <Loading />;
   }
   if (!userRole) {
     return <Navigate to="/login" replace />;

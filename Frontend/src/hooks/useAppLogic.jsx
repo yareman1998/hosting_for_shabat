@@ -4,6 +4,7 @@ import { authApi } from '../api/api'
 import Layout from '../components/Common/Layout/Layout'
 import HomePage from '../pages/Home/Home'
 import FindHost from '../pages/FindHost/FindHost'
+import HostDetails from '../pages/HostDetails/HostDetails'
 import MyRequests from '../pages/MyRequests/MyRequests'
 import RequestsBoard from '../pages/RequestsBoard/RequestsBoard'
 import ProfilePage from '../pages/Profile/Profile'
@@ -14,11 +15,12 @@ import Login from '../pages/Login/Login'
 import Register from '../pages/Register/Register'
 
 // Admin Views
-import AdminLayout from '../pages/Admin/AdminLayout'
-import AdminDashboard from '../pages/Admin/AdminDashboard'
-import AdminUsers from '../pages/Admin/AdminUsers'
-import AdminBookings from '../pages/Admin/AdminBookings'
-import AdminListings from '../pages/Admin/AdminListings'
+import AdminLayout from '../pages/Admin/Admin'
+import AdminDashboard from '../components/Admin/AdminDashboard'
+import AdminUsers from '../components/Admin/AdminUsers'
+import AdminBookings from '../components/Admin/AdminBookings'
+import AdminListings from '../components/Admin/AdminListings'
+
 
 import ProtectedRoute from '../components/Common/ProtectedRoute'
 import Loading from '../components/Common/Loading/Loading'
@@ -96,6 +98,22 @@ export function useAppLogic() {
             element: (
               <ProtectedRoute allowedRoles={['guest']} userRole={userRole} loading={loadingAuth}>
                 <FindHost />
+              </ProtectedRoute>
+            )
+          },
+          {
+            path: 'find-host/:id',
+            element: (
+              <ProtectedRoute allowedRoles={['guest']} userRole={userRole} loading={loadingAuth}>
+                <HostDetails />
+              </ProtectedRoute>
+            )
+          },
+          {
+            path: 'host/:id',
+            element: (
+              <ProtectedRoute allowedRoles={['guest']} userRole={userRole} loading={loadingAuth}>
+                <HostDetails />
               </ProtectedRoute>
             )
           },

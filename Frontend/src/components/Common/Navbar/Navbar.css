@@ -64,28 +64,28 @@
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.375rem;
   text-decoration: none;
-  padding: var(--nav-item-padding);
-  border-radius: 9999px; /* Rounded pill shape */
-  color: var(--navbar-item-color);
-  font-weight: 600;
-  font-size: 0.95rem;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid transparent;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
+  color: var(--muted-foreground, #64748b);
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
 /* Hover State */
 .nav-item:hover {
-  color: var(--navbar-item-hover);
-  background-color: var(--navbar-item-hover-bg);
+  color: var(--foreground, #0f172a);
+  background-color: var(--secondary-hover, rgba(241, 245, 249, 0.6));
 }
 
-/* Active State (The Blue Pill) */
+/* Active State */
 .nav-item.active {
-  background-color: var(--navbar-item-active-bg);
-  border-color: var(--navbar-item-active-border);
-  color: var(--navbar-item-active-color);
+  background-color: var(--secondary, #f1f5f9);
+  color: var(--primary, #2563eb);
+  font-weight: 600;
 }
 
 /* Navigation Icons */

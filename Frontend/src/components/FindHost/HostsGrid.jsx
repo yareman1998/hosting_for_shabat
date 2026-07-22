@@ -1,5 +1,5 @@
-import React from 'react';
-import HostCard from '../../../components/HostCard/HostCard';
+
+import HostCard from '../HostCard/HostCard';
 import EmptyResultsState from './EmptyResultsState';
 
 export default function HostsGrid({

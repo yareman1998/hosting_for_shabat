@@ -1,33 +1,40 @@
-import React from 'react';
-import useHostSearch from './hooks/useHostSearch';
-import FindHostHeader from './components/FindHostHeader';
-import SearchFilterPanel from './components/SearchFilterPanel';
-import ResultsStatusBar from './components/ResultsStatusBar';
-import HostsGrid from './components/HostsGrid';
+
+import { useNavigate } from 'react-router-dom';
+import useHostSearch from '../../hooks/useHostSearch';
+import FindHostHeader from '../../components/FindHost/FindHostHeader';
+import SearchFilterPanel from '../../components/FindHost/SearchFilterPanel';
+import HostsGrid from '../../components/FindHost/HostsGrid';
 import './FindHost.css';
 
 export default function FindHost() {
+  const navigate = useNavigate();
   const {
     hosts,
     loading,
     error,
-    isDebouncing,
     searchTerm,
     setSearchTerm,
+    regionFilter,
+    setRegionFilter,
     kashrutFilter,
     setKashrutFilter,
     lodgingFilter,
     handleLodgingToggle,
     availableOnlyFilter,
     handleAvailableOnlyToggle,
-    sortByMatch,
-    setSortByMatch,
+    sortBy,
+    setSortBy,
     handleResetFilters,
-    handleBookingRequest,
     fetchHosts,
     toastMessage,
     hasActiveFilters
   } = useHostSearch();
+
+  const handleSelectHost = (host) => {
+    if (host?.id) {
+      navigate(`/find-host/${host.id}`, { state: { host } });
+    }
+  };
 
   return (
     <div className="find-host-page">
@@ -38,32 +45,28 @@ export default function FindHost() {
       <SearchFilterPanel
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
+        regionFilter={regionFilter}
+        onRegionChange={setRegionFilter}
         kashrutFilter={kashrutFilter}
         onKashrutChange={setKashrutFilter}
-        sortByMatch={sortByMatch}
-        onSortChange={setSortByMatch}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
         lodgingFilter={lodgingFilter}
         onLodgingToggle={handleLodgingToggle}
         availableOnlyFilter={availableOnlyFilter}
         onAvailableOnlyToggle={handleAvailableOnlyToggle}
         onResetFilters={handleResetFilters}
         hasActiveFilters={hasActiveFilters}
-      />
-
-      {/* 3. Live Results Status Bar */}
-      <ResultsStatusBar
         count={hosts.length}
-        loading={loading}
-        isDebouncing={isDebouncing}
       />
 
-      {/* 4. Dynamic Hosts Grid, Loading & Empty States */}
+      {/* 3. Dynamic Hosts Grid, Loading & Empty States */}
       <HostsGrid
         hosts={hosts}
         loading={loading}
         error={error}
         onRetry={fetchHosts}
-        onBookingRequest={handleBookingRequest}
+        onBookingRequest={handleSelectHost}
         onResetFilters={handleResetFilters}
       />
 

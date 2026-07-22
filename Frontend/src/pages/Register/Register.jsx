@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
-import { Sun, Moon, Shield, Eye, EyeOff } from 'lucide-react';
+import { authApi } from '../../api/api';
+import { Shield, Eye, EyeOff } from 'lucide-react';
 import './Register.css';
 
 export default function Register() {
@@ -20,24 +20,10 @@ export default function Register() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Initialize theme from localStorage
-  const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
-
   const navigate = useNavigate();
   const location = useLocation();
 
   const isLoginActive = location.pathname === '/login';
-
-  // Synchronize layout dark-theme classes
-  useEffect(() => {
-    if (isDark) {
-      document.body.classList.add('dark-theme');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.body.classList.remove('dark-theme');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDark]);
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -65,14 +51,10 @@ export default function Register() {
         user_type: formData.user_type
       };
 
-      const response = await axios.post('http://localhost:8000/api/auth/register', payload, {
-        headers: { 'Content-Type': 'application/json' }
-      });
+      await authApi.register(payload);
 
-      if (response.status === 201 || response.status === 200) {
-        setSuccess('ההרשמה בוצעה בהצלחה! מעביר אותך להתחברות...');
-        setTimeout(() => navigate('/login'), 2000);
-      }
+      setSuccess('ההרשמה בוצעה בהצלחה! מעביר אותך להתחברות...');
+      setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
       setError('הרשמה נכשלה. אנא ודא שהפרטים אינם רשומים כבר במערכת.');
     } finally {
@@ -83,36 +65,15 @@ export default function Register() {
   return (
     <div className="login-container">
       <div className="login-card">
-        {/* Floating Theme Switcher Button */}
-        <button
-          type="button"
-          className="theme-toggle-btn"
-          onClick={() => setIsDark(!isDark)}
-          title={isDark ? "מצב בהיר" : "מצב כהה"}
-        >
-          {isDark ? (
-            <Sun className="theme-icon" size={24} color="#eab308" />
-          ) : (
-            <Moon className="theme-icon" size={24} color="#64748b" />
-          )}
-        </button>
-
         {/* Navigation Switcher Pill */}
         <div className="auth-toggle-wrapper">
           <div className="auth-toggle-pill">
-            <button
-              type="button"
-              className={`toggle-arrow ${!isLoginActive ? 'disabled' : ''}`}
-              onClick={() => navigate('/register')}
-              disabled={!isLoginActive}
-            >
-              ‹
-            </button>
-            <div className="toggle-options-container">
+            <div className="toggle-options-container" style={{ width: '100%' }}>
               <button
                 type="button"
                 className={`toggle-btn-option ${!isLoginActive ? 'active' : ''}`}
                 onClick={() => navigate('/register')}
+                style={{ flex: 1, textAlign: 'center' }}
               >
                 הרשמה
               </button>
@@ -120,18 +81,11 @@ export default function Register() {
                 type="button"
                 className={`toggle-btn-option ${isLoginActive ? 'active' : ''}`}
                 onClick={() => navigate('/login')}
+                style={{ flex: 1, textAlign: 'center' }}
               >
                 התחברות
               </button>
             </div>
-            <button
-              type="button"
-              className={`toggle-arrow ${isLoginActive ? 'disabled' : ''}`}
-              onClick={() => navigate('/login')}
-              disabled={isLoginActive}
-            >
-              ›
-            </button>
           </div>
         </div>
 
@@ -240,12 +194,29 @@ export default function Register() {
             </div>
           </div>
 
+          {/* Custom Pill Switcher for User Type */}
           <div className="form-group">
-            <label htmlFor="user_type">אני רוצה להיות...</label>
-            <select id="user_type" value={formData.user_type} onChange={handleChange}>
-              <option value="guest">חייל/ת (אורח)</option>
-              <option value="host">משפחה מארחת</option>
-            </select>
+            <label>אני רוצה להיות...</label>
+            <div className="auth-toggle-pill" style={{ marginTop: '4px' }}>
+              <div className="toggle-options-container" style={{ width: '100%' }}>
+                <button
+                  type="button"
+                  className={`toggle-btn-option ${formData.user_type === 'guest' ? 'active' : ''}`}
+                  onClick={() => setFormData((prev) => ({ ...prev, user_type: 'guest' }))}
+                  style={{ flex: 1, textAlign: 'center' }}
+                >
+                  צבא / שירות לאומי
+                </button>
+                <button
+                  type="button"
+                  className={`toggle-btn-option ${formData.user_type === 'host' ? 'active' : ''}`}
+                  onClick={() => setFormData((prev) => ({ ...prev, user_type: 'host' }))}
+                  style={{ flex: 1, textAlign: 'center' }}
+                >
+                  משפחה מארחת
+                </button>
+              </div>
+            </div>
           </div>
 
           <button type="submit" className="login-btn" disabled={loading}>

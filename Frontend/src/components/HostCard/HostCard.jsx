@@ -1,40 +1,68 @@
-import React from 'react';
-import HostCardMedia from './components/HostCardMedia';
-import HostCardHeader from './components/HostCardHeader';
-import HostCardTags from './components/HostCardTags';
-import HostSpotsIndicator from './components/HostSpotsIndicator';
-import HostCardFooter from './components/HostCardFooter';
+
+import { Star, MapPin } from 'lucide-react';
+import HostCardMedia from './HostCardMedia';
 import './HostCard.css';
 
 export default function HostCard({ host, onBookingRequest }) {
   if (!host) return null;
 
-  const isFull = host.available_spots === 0;
+  const fullName = host.full_name || host.host_name || 'משפחת כהן';
+  const rating = host.rating !== undefined && host.rating !== null ? Number(host.rating).toFixed(1) : '4.9';
+  const reviewsCount = host.reviews_count ?? host.review_count ?? 47;
+  const city = host.city || 'מודיעין';
+  const availableSpots = host.available_spots !== undefined && host.available_spots !== null ? host.available_spots : 2;
+  const tags = host.tags && host.tags.length > 0 ? host.tags : ['ילדים', 'חם ומשפחתי'];
 
   return (
-    <div className="host-card">
-      {/* 1. Media Header (Image / Placeholder & Overlay Badges) */}
+    <button
+      type="button"
+      onClick={() => onBookingRequest && onBookingRequest(host)}
+      className="host-card-button"
+    >
+      {/* 1. Media Header (Image, Badges, Overlay Gradient) */}
       <HostCardMedia host={host} />
 
       {/* 2. Main Content Details */}
-      <div className="card-content">
-        <HostCardHeader fullName={host.full_name} city={host.city} />
+      <div className="card-body-container">
+        {/* Row 1: Rating (Left in RTL) & Name (Right in RTL) */}
+        <div className="card-row-header">
+          <span className="card-rating-group">
+            <Star size={16} className="star-icon-amber" />
+            <span className="card-rating-score">
+              {rating}
+            </span>
+            <span className="card-rating-count">
+              ({reviewsCount})
+            </span>
+          </span>
 
-        {host.biography && (
-          <p className="host-biography">{host.biography}</p>
-        )}
+          <h3 className="card-title-name">
+            {fullName}
+          </h3>
+        </div>
 
-        <HostCardTags tags={host.tags} />
+        {/* Row 2: Location */}
+        <div className="card-row-location">
+          <MapPin size={14} className="location-icon" />
+          {city}
+        </div>
 
-        <HostSpotsIndicator availableSpots={host.available_spots} />
+        {/* Row 3: Available Spots (Right) & Tags (Left) */}
+        <div className="card-row-footer">
+          <span className={`card-spots-text ${availableSpots > 0 ? 'text-amber' : 'text-red'}`}>
+            {availableSpots > 0 ? `${availableSpots} מקומות` : 'אזלו המקומות'}
+          </span>
+
+          <div className="card-tags-group">
+            {tags.map((tag, idx) => (
+              <span key={idx} className="card-tag-pill">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
-
-      {/* 3. Action Footer */}
-      <HostCardFooter
-        host={host}
-        isFull={isFull}
-        onBookingRequest={onBookingRequest}
-      />
-    </div>
+    </button>
   );
 }
+

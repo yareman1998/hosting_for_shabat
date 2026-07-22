@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { adminApi } from '../../api/api';
-import { HomeIcon, UsersIcon, CheckCircleIcon, MyRequestsIcon } from '../../components/Common/Icons';
-import PageContainer from '../../components/Common/PageContainer/PageContainer';
-import './Admin.css';
+import { HomeIcon, UsersIcon, CheckCircleIcon, MyRequestsIcon } from '../Common/Icons';
+import PageContainer from '../Common/PageContainer/PageContainer';
+import '../../pages/Admin/Admin.css';
 
 function DonutChart({ data, title }) {
   const total = data.reduce((sum, item) => sum + (item.value || 0), 0);

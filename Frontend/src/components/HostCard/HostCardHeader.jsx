@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 export default function HostCardHeader({ fullName, city }) {
   return (

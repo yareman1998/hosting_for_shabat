@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 export default function HostCardFooter({ host, isFull, onBookingRequest }) {
   return (

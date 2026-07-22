@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { adminApi } from '../../api/api';
-import { LockIcon, UnlockIcon, CheckCircleIcon, TrashIcon, ChevronLeftIcon } from '../../components/Common/Icons';
-import PageContainer from '../../components/Common/PageContainer/PageContainer';
-import Table from '../../components/Common/Table/Table';
-import './Admin.css';
+import { LockIcon, UnlockIcon, CheckCircleIcon, TrashIcon, ChevronLeftIcon } from '../Common/Icons';
+import PageContainer from '../Common/PageContainer/PageContainer';
+import Table from '../Common/Table/Table';
+import '../../pages/Admin/Admin.css';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);

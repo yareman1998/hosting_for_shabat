@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 export default function HostCardTags({ tags }) {
   if (!tags || tags.length === 0) return null;

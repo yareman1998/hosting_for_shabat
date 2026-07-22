@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { listingsApi } from '../../api/api';
-import PageContainer from '../../components/Common/PageContainer/PageContainer';
-import Table from '../../components/Common/Table/Table';
-import './Admin.css';
+import PageContainer from '../Common/PageContainer/PageContainer';
+import Table from '../Common/Table/Table';
+import '../../pages/Admin/Admin.css';
 
 export default function AdminListings() {
   const [hosts, setHosts] = useState([]);
@@ -25,7 +25,7 @@ export default function AdminListings() {
           listingsApi.getKashrutOptions()
         ]);
         setHosts(hostsRes.data);
-        setKashrutOptions(kashrutRes.data);
+        kashrutOptions && setKashrutOptions(kashrutRes.data);
       } catch (err) {
         console.error('Failed to fetch data:', err);
         setError('שגיאה בטעינת הנתונים מהשרת.');

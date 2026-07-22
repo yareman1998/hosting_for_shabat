@@ -2,9 +2,16 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: #F0F4FA;
 }
 
 .layout-content {
   flex: 1;
-  padding: var(--layout-padding);
+  width: 100%;
+  max-width: 80rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+  padding-block: 2rem;
+  background-color: #F0F4FA;
+  box-sizing: border-box;
 }

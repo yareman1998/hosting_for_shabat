@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 export default function HostSpotsIndicator({ availableSpots }) {
   const spots = availableSpots !== undefined ? availableSpots : 3;

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { adminApi } from '../../api/api';
 import { formatDate } from '../../utils/date';
-import { TrashIcon } from '../../components/Common/Icons';
-import PageContainer from '../../components/Common/PageContainer/PageContainer';
-import Table from '../../components/Common/Table/Table';
-import './Admin.css';
+import { TrashIcon } from '../Common/Icons';
+import PageContainer from '../Common/PageContainer/PageContainer';
+import Table from '../Common/Table/Table';
+import '../../pages/Admin/Admin.css';
 
 export default function AdminBookings() {
   const [data, setData] = useState({ matches: [], posts: [] });

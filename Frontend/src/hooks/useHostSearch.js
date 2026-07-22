@@ -1,9 +1,29 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { listingsApi } from '../../../api/api';
+import { listingsApi } from "../api/api";
+
+// Region city mapping helper
+const REGION_CITY_MAP = {
+  'מרכז': ['תל אביב', 'רמת גן', 'פתח תקווה', 'ראשון לציון', 'חולון', 'בת ים', 'נתניה', 'הרצליה', 'כפר סבא', 'רעננה', 'מרכז', 'גבעתיים', 'מודיעין'],
+  'ירושלים': ['ירושלים', 'בית שמש', 'מעלה אדומים', 'אפרת', 'גוש עציון', 'ירושלים והסביבה'],
+  'צפון': ['חיפה', 'טבריה', 'צפת', 'עכו', 'נהריה', 'גולן', 'קריות', 'צפון', 'עפולה', 'כרמיאל', 'נצרת'],
+  'דרום': ['באר שבע', 'אשדוד', 'אשקלון', 'אילת', 'שדרות', 'דרום', 'נתיבות', 'אופקים', 'ערד']
+};
+
+const CACHE_KEY = 'shabbat_hosts_cache';
+
+const getCachedHosts = () => {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    return cached ? JSON.parse(cached) : [];
+  } catch (e) {
+    console.warn('Failed to parse cached hosts from localStorage:', e);
+    return [];
+  }
+};
 
 export default function useHostSearch() {
-  const [hosts, setHosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [hosts, setHosts] = useState(() => getCachedHosts());
+  const [loading, setLoading] = useState(() => getCachedHosts().length === 0);
   const [error, setError] = useState(null);
 
   // Search input state and 300ms debouncing
@@ -11,11 +31,12 @@ export default function useHostSearch() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [isDebouncing, setIsDebouncing] = useState(false);
 
-  // Filter dropdown states
+  // Filter dropdown & button states
+  const [regionFilter, setRegionFilter] = useState('ALL');
   const [kashrutFilter, setKashrutFilter] = useState('ALL');
   const [lodgingFilter, setLodgingFilter] = useState('ALL');
   const [availableOnlyFilter, setAvailableOnlyFilter] = useState(false);
-  const [sortByMatch, setSortByMatch] = useState('DESC');
+  const [sortBy, setSortBy] = useState('AI');
 
   // Toast message
   const [toastMessage, setToastMessage] = useState('');
@@ -31,16 +52,19 @@ export default function useHostSearch() {
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
-  // Fetch hosts from DB API
+  // Fetch hosts from DB API once on refresh / mount
   const fetchHosts = useCallback(async () => {
-    setLoading(true);
+    // Only set full loading UI if we don't have cached hosts yet
+    setHosts((prevHosts) => {
+      if (!prevHosts || prevHosts.length === 0) {
+        setLoading(true);
+      }
+      return prevHosts;
+    });
     setError(null);
     try {
-      const params = {};
-      if (debouncedSearch) params.city = debouncedSearch;
-      if (kashrutFilter !== 'ALL') params.kashrut_level = kashrutFilter;
-
-      const response = await listingsApi.searchHosts(params);
+      // Fetch all listings without backend query filtering params
+      const response = await listingsApi.searchHosts();
       const rawData = response.data || [];
 
       // Normalize DB response objects for presentation
@@ -73,13 +97,24 @@ export default function useHostSearch() {
       }));
 
       setHosts(mappedHosts);
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(mappedHosts));
+      } catch (e) {
+        console.warn('Failed to save hosts to localStorage:', e);
+      }
     } catch (err) {
       console.error('Error fetching hosts from DB:', err);
-      setError('לא ניתן לטעון את רשימת המארחים משרת המסד נתונים. אנא ודא שהשרת פעיל ונסה שוב.');
+      // Only show blocking error if there are no cached hosts available
+      setHosts((currentHosts) => {
+        if (!currentHosts || currentHosts.length === 0) {
+          setError('לא ניתן לטעון את רשימת המארחים משרת המסד נתונים. אנא ודא שהשרת פעיל ונסה שוב.');
+        }
+        return currentHosts;
+      });
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, kashrutFilter]);
+  }, []);
 
   useEffect(() => {
     fetchHosts();
@@ -88,10 +123,11 @@ export default function useHostSearch() {
   // Reset filters
   const handleResetFilters = () => {
     setSearchTerm('');
+    setRegionFilter('ALL');
     setKashrutFilter('ALL');
     setLodgingFilter('ALL');
     setAvailableOnlyFilter(false);
-    setSortByMatch('DESC');
+    setSortBy('AI');
   };
 
   // Toggle lodging quick filter
@@ -102,12 +138,6 @@ export default function useHostSearch() {
   // Toggle available spots quick filter
   const handleAvailableOnlyToggle = () => {
     setAvailableOnlyFilter((prev) => !prev);
-  };
-
-  // Booking request feedback
-  const handleBookingRequest = (host) => {
-    setToastMessage(`בקשת אירוח נשלחה בהצלחה אל ${host.full_name}! ננעץ עבורך.`);
-    setTimeout(() => setToastMessage(''), 4500);
   };
 
   // Computed filtered and sorted hosts
@@ -122,13 +152,24 @@ export default function useHostSearch() {
           host.biography.toLowerCase().includes(term) ||
           (host.tags && host.tags.some((tag) => tag.toLowerCase().includes(term)));
 
+        // Region filter
+        let matchesRegion = true;
+        if (regionFilter !== 'ALL') {
+          const hostCity = host.city.toLowerCase();
+          const regionCities = REGION_CITY_MAP[regionFilter] || [regionFilter];
+          matchesRegion =
+            regionCities.some((c) => hostCity.includes(c.toLowerCase())) ||
+            (host.tags && host.tags.some((t) => t.toLowerCase().includes(regionFilter.toLowerCase())));
+        }
+
         const hostKashrut = String(host.kashrut_level || '').toLowerCase();
         const filterKashrut = String(kashrutFilter).toLowerCase();
         const matchesKashrut =
           kashrutFilter === 'ALL' ||
           hostKashrut === filterKashrut ||
           ((filterKashrut === 'glatt_mehadrin' || filterKashrut === 'mehadrin') &&
-            (hostKashrut === 'glatt_mehadrin' || hostKashrut === 'mehadrin'));
+            (hostKashrut === 'glatt_mehadrin' || hostKashrut === 'mehadrin' || hostKashrut === 'glatt_mehadrin / חלק')) ||
+          (filterKashrut === 'kosher' && (hostKashrut === 'kosher' || hostKashrut === 'כשר'));
 
         const matchesLodging =
           lodgingFilter === 'ALL' ||
@@ -139,28 +180,43 @@ export default function useHostSearch() {
 
         return (
           matchesSearch &&
+          matchesRegion &&
           matchesKashrut &&
           matchesLodging &&
           matchesAvailability
         );
       })
       .sort((a, b) => {
-        if (sortByMatch === 'DESC') {
+        if (sortBy === 'AI' || sortBy === 'DESC') {
           return b.match_percentage - a.match_percentage;
         }
-        return a.match_percentage - b.match_percentage;
+        if (sortBy === 'ASC') {
+          return a.match_percentage - b.match_percentage;
+        }
+        if (sortBy === 'RATING') {
+          return (b.rating || b.match_percentage) - (a.rating || a.match_percentage);
+        }
+        if (sortBy === 'SPOTS') {
+          return b.available_spots - a.available_spots;
+        }
+        if (sortBy === 'NAME') {
+          return a.full_name.localeCompare(b.full_name, 'he');
+        }
+        return 0;
       });
   }, [
     hosts,
     debouncedSearch,
+    regionFilter,
     kashrutFilter,
     lodgingFilter,
     availableOnlyFilter,
-    sortByMatch
+    sortBy
   ]);
 
   const hasActiveFilters = Boolean(
     searchTerm ||
+      regionFilter !== 'ALL' ||
       kashrutFilter !== 'ALL' ||
       lodgingFilter !== 'ALL' ||
       availableOnlyFilter
@@ -173,16 +229,19 @@ export default function useHostSearch() {
     isDebouncing,
     searchTerm,
     setSearchTerm,
+    regionFilter,
+    setRegionFilter,
     kashrutFilter,
     setKashrutFilter,
     lodgingFilter,
     handleLodgingToggle,
     availableOnlyFilter,
     handleAvailableOnlyToggle,
-    sortByMatch,
-    setSortByMatch,
+    sortByMatch: sortBy,
+    setSortByMatch: setSortBy,
+    sortBy,
+    setSortBy,
     handleResetFilters,
-    handleBookingRequest,
     fetchHosts,
     toastMessage,
     hasActiveFilters

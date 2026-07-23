@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { X, MessageSquare, Lock, Unlock, RotateCcw, Check, User, Loader2, Clock } from 'lucide-react';
+import { X, MessageSquare, Lock, Unlock, RotateCcw, Check, User, Loader2, Clock, ExternalLink } from 'lucide-react';
 import {
   deselectDate,
   setOverride,
@@ -36,11 +36,14 @@ const STATUS_META = {
   notice_closed: { label: 'חסום (עבר מועד)', className: 'ddp-status--notice', emoji: '🟡' },
 };
 
+import { useNavigate } from 'react-router-dom';
+
 export default function DayDetailPanel() {
   const dispatch = useDispatch();
   const { selectedDate, rules, overrides, bookings } = useSelector((s) => s.availability);
   const posts = useSelector((s) => s.requests?.posts || []);
   const [submittingId, setSubmittingId] = useState(null);
+  const navigate = useNavigate();
 
   const handleClose = useCallback(() => dispatch(deselectDate()), [dispatch]);
 
@@ -142,8 +145,8 @@ export default function DayDetailPanel() {
 
         {/* ── Pending Requests List & Actions ── */}
         {pendingRequests.length > 0 && (
-          <div style={{ margin: '16px 24px 0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', margin: 0 }}>
+          <div className="ddp-pending-section">
+            <h4 className="ddp-pending-title">
               בקשות אירוח ממתינות ({pendingRequests.length}):
             </h4>
             {pendingRequests.map((post) => {
@@ -157,14 +160,9 @@ export default function DayDetailPanel() {
               return (
                 <div
                   key={post.id}
-                  className="ddp-booking-card"
-                  style={{
-                    backgroundColor: isWaitingGuest ? '#fffbe6' : '#f0f9ff',
-                    borderColor: isWaitingGuest ? '#fef08a' : '#bae6fd',
-                    margin: 0,
-                  }}
+                  className={`ddp-booking-card ${isWaitingGuest ? 'ddp-card-waiting' : 'ddp-card-pending'}`}
                 >
-                  <div className="ddp-booking-header" style={{ color: isWaitingGuest ? '#b45309' : '#0369a1' }}>
+                  <div className={`ddp-booking-header ${isWaitingGuest ? 'ddp-header-waiting' : 'ddp-header-pending'}`}>
                     {isWaitingGuest ? <Clock size={18} /> : <User size={18} />}
                     <h3>
                       {isWaitingGuest
@@ -177,7 +175,7 @@ export default function DayDetailPanel() {
 
                   <div className="ddp-booking-row">
                     <span className="ddp-booking-label">שם האורח</span>
-                    <span className="ddp-booking-value" style={{ fontWeight: 700 }}>
+                    <span className="ddp-booking-value font-bold">
                       {post.guest_name || post.guest_profile?.user?.full_name || 'אורח'}
                     </span>
                   </div>
@@ -191,7 +189,7 @@ export default function DayDetailPanel() {
 
                   <div className="ddp-booking-row">
                     <span className="ddp-booking-label">כמות חבר'ה</span>
-                    <span className="ddp-booking-value" style={{ fontWeight: 600, color: '#2563eb' }}>
+                    <span className="ddp-booking-value ddp-value-highlight">
                       {post.guests_count || 1} חבר'ה
                     </span>
                   </div>
@@ -204,74 +202,34 @@ export default function DayDetailPanel() {
                   )}
 
                   {inReturnVal && (
-                    <div
-                      className="ddp-booking-row"
-                      style={{
-                        backgroundColor: '#f0fdf4',
-                        padding: '6px 8px',
-                        borderRadius: '6px',
-                        border: '1px solid #bbf7d0',
-                        marginTop: '4px',
-                      }}
-                    >
-                      <span className="ddp-booking-label" style={{ color: '#166534', fontWeight: 600 }}>
+                    <div className="ddp-booking-row ddp-return-box">
+                      <span className="ddp-booking-label ddp-return-label">
                         מביאים לאירוח
                       </span>
-                      <span className="ddp-booking-value" style={{ color: '#15803d', fontWeight: 700 }}>
+                      <span className="ddp-booking-value ddp-return-value">
                         {inReturnVal}
                       </span>
                     </div>
                   )}
 
                   {cleanDesc && (
-                    <div className="ddp-booking-row" style={{ marginTop: '4px' }}>
+                    <div className="ddp-booking-row ddp-desc-row">
                       <span className="ddp-booking-label">הערות האורח</span>
                       <span className="ddp-booking-value">{cleanDesc}</span>
                     </div>
                   )}
 
                   {isWaitingGuest ? (
-                    <div
-                      style={{
-                        margin: '12px 16px',
-                        padding: '10px 14px',
-                        backgroundColor: '#fef3c7',
-                        borderRadius: '8px',
-                        color: '#92400e',
-                        fontWeight: 600,
-                        fontSize: '13px',
-                        textAlign: 'center',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        border: '1px solid #fde68a',
-                      }}
-                    >
+                    <div className="ddp-waiting-notice">
                       <Clock size={16} />
                       <span>הצעת אירוח נשלחה — ממתין לאישור האורח...</span>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', gap: '10px', padding: '12px 16px' }}>
+                    <div className="ddp-request-actions">
                       <button
                         onClick={() => handleApproveRequest(post)}
                         disabled={submittingId !== null}
-                        style={{
-                          flex: 1,
-                          padding: '10px 14px',
-                          backgroundColor: '#16a34a',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '8px',
-                          fontWeight: 600,
-                          cursor: submittingId !== null ? 'not-allowed' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          opacity: submittingId !== null ? 0.6 : 1,
-                          boxShadow: '0 2px 4px rgba(22, 163, 74, 0.2)',
-                        }}
+                        className="ddp-btn-approve"
                       >
                         {isCurrentSubmitting ? <Loader2 size={16} className="spin-icon" /> : <Check size={16} />}
                         <span>אישור בקשה</span>
@@ -280,21 +238,7 @@ export default function DayDetailPanel() {
                       <button
                         onClick={() => handleRejectRequest(post)}
                         disabled={submittingId !== null}
-                        style={{
-                          flex: 1,
-                          padding: '10px 14px',
-                          backgroundColor: '#ef4444',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '8px',
-                          fontWeight: 600,
-                          cursor: submittingId !== null ? 'not-allowed' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          opacity: submittingId !== null ? 0.6 : 1,
-                        }}
+                        className="ddp-btn-reject"
                       >
                         {isCurrentSubmitting ? <Loader2 size={16} className="spin-icon" /> : <X size={16} />}
                         <span>דחיית בקשה</span>
@@ -308,33 +252,64 @@ export default function DayDetailPanel() {
         )}
 
         {status === 'booked' && booking && (
-          <div className="ddp-booking-card">
-            <div className="ddp-booking-header">
-              <MessageSquare size={16} />
-              <h3>פרטי האורחים</h3>
-            </div>
-            <div className="ddp-booking-row">
-              <span className="ddp-booking-label">שם</span>
-              <span className="ddp-booking-value">{booking.guestName || '—'}</span>
-            </div>
-            {booking.guestPhone && (
-              <div className="ddp-booking-row">
-                <span className="ddp-booking-label">טלפון</span>
-                <span className="ddp-booking-value" dir="ltr">{booking.guestPhone}</span>
+          <div className="ddp-booking-card ddp-card-overflow">
+            <div className="ddp-card-body">
+              <div className="ddp-booking-header">
+                <MessageSquare size={16} />
+                <h3>פרטי האורחים</h3>
               </div>
-            )}
-            {booking.notes && (
               <div className="ddp-booking-row">
-                <span className="ddp-booking-label">הערות</span>
-                <span className="ddp-booking-value">{booking.notes}</span>
+                <span className="ddp-booking-label">שם</span>
+                <span className="ddp-booking-value">{booking.guestName || '—'}</span>
               </div>
-            )}
-            {whatsappUrl && (
-              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
-                className="ddp-whatsapp-btn" id="ddp-whatsapp">
-                💬 פנה לאורח ב-WhatsApp
-              </a>
-            )}
+              {booking.guestPhone && (
+                <div className="ddp-booking-row">
+                  <span className="ddp-booking-label">טלפון</span>
+                  <span className="ddp-booking-value" dir="ltr">{booking.guestPhone}</span>
+                </div>
+              )}
+              {booking.notes && (
+                <div className="ddp-booking-row">
+                  <span className="ddp-booking-label">הערות</span>
+                  <span className="ddp-booking-value">{booking.notes}</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="ddp-matched-footer">
+              <div className="ddp-matched-links">
+                <button 
+                  onClick={() => {
+                    handleClose();
+                    const matchId = booking.match_id || booking.id;
+                    const otherPartyName = booking.guest_name || booking.soldier_name || 'אורח / חייל';
+                    const hostingDate = booking.date || booking.hosting_date || selectedDateStr;
+                    navigate('/chats', {
+                      state: {
+                        matchId,
+                        chatData: {
+                          match_id: matchId,
+                          other_party_name: otherPartyName,
+                          hosting_date: hostingDate,
+                          last_message: null,
+                          last_message_time: null,
+                          unread_count: 0
+                        }
+                      }
+                    });
+                  }} 
+                  className="ddp-chat-link"
+                >
+                  <MessageSquare size={16} />
+                  צ'אט
+                </button>
+                <button className="ddp-chat-link">
+                  <ExternalLink size={16} />
+                  פרטי שיבוץ
+                </button>
+              </div>
+              <p className="ddp-matched-badge">האירוח אושר! ✓</p>
+            </div>
           </div>
         )}
 

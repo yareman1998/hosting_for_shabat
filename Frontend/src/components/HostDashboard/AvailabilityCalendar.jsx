@@ -189,9 +189,6 @@ export default function AvailabilityCalendar() {
       </div>
 
       <div className="ac-legend">
-        <span className="legend-item"><span className="legend-dot dot--open" />פתוח לאירוח</span>
-        <span className="legend-item"><span className="legend-dot dot--booked" />תפוס</span>
-        <span className="legend-item"><span className="legend-dot dot--closed" />חסום</span>
         <span className="legend-item"><span className="legend-dot dot--pending-flashing" />יש בקשה שטרם אושרה</span>
         <span className="legend-item"><span className="legend-dot dot--notice" />מחכה לתשובת אורח</span>
       </div>

@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Utensils, Users, Heart, Edit3, Loader2, AlertCircle, Clock, Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Utensils, Users, Heart, Edit3, Loader2, AlertCircle, Clock, Check, MessageSquare, ExternalLink } from 'lucide-react';
 import { formatHebrewDate, getRelativeTimeHebrew, checkPostUrgency } from '../../utils/date';
 import RequestInlineEdit from './RequestInlineEdit';
 import PendingOfferBox from './PendingOfferBox';
 
 export default function RequestCard({ post, userRole, onAction, isClaiming, onUpdateSuccess }) {
+  const navigate = useNavigate();
   const [isEditingInline, setIsEditingInline] = useState(false);
 
   // Determine displayed name
@@ -78,15 +80,15 @@ export default function RequestCard({ post, userRole, onAction, isClaiming, onUp
         const cleanDesc = desc.replace(/מביאים לאירוח:[^\n]+/, '').trim();
 
         return (
-          <div className="card-description-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '8px 0 12px 0' }}>
+          <div className="card-description-wrapper">
             {inReturnVal && (
-              <div style={{ backgroundColor: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', padding: '6px 10px', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, width: 'fit-content' }}>
+              <div className="card-bring-item">
                 <span>מביאים לאירוח: </span>
-                <span style={{ fontWeight: 700 }}>{inReturnVal}</span>
+                <span className="font-bold">{inReturnVal}</span>
               </div>
             )}
             {cleanDesc && (
-              <p className="card-description" style={{ margin: 0 }}>{cleanDesc}</p>
+              <p className="card-description">{cleanDesc}</p>
             )}
           </div>
         );
@@ -113,23 +115,57 @@ export default function RequestCard({ post, userRole, onAction, isClaiming, onUp
       )}
 
       <div className="card-actions">
-        {userRole === 'host' ? (
+        {post.status === 'matched' || post.status === 'approved' ? (
+          <div className="card-matched-banner">
+            <div className="card-matched-links">
+              <button 
+                onClick={() => {
+                  const matchId = post.match_id || post.match?.id || post.pending_match_id || post.id;
+                  const otherPartyName = userRole === 'guest'
+                    ? (post.claimed_by_host_name || post.host_name || 'מארח')
+                    : displayName;
+                  const hostingDate = post.requested_date || post.start_date;
+                  navigate('/chats', {
+                    state: {
+                      matchId,
+                      chatData: {
+                        match_id: matchId,
+                        other_party_name: otherPartyName,
+                        hosting_date: hostingDate,
+                        last_message: null,
+                        last_message_time: null,
+                        unread_count: 0
+                      }
+                    }
+                  });
+                }} 
+                className="card-matched-btn"
+              >
+                <MessageSquare size={16} />
+                צ'אט
+              </button>
+              <button className="card-matched-btn">
+                <ExternalLink size={16} />
+                פרטי שיבוץ
+              </button>
+            </div>
+            <p className="card-matched-status">האירוח אושר! ✓</p>
+          </div>
+        ) : userRole === 'host' ? (
           post.status === 'pending' ? (
             isDirectRequest ? (
               <button
-                className="action-button claim-button"
+                className="action-button claim-button direct-approve-btn"
                 onClick={() => onAction && onAction(post)}
                 disabled={isClaiming}
-                style={{ backgroundColor: '#16a34a', color: 'white' }}
               >
                 {isClaiming ? <Loader2 className="w-4 h-4 spin-icon" /> : <Check className="w-4 h-4" />}
                 <span>אישור בקשה</span>
               </button>
             ) : (
               <button
-                className="action-button claim-button"
+                className="action-button claim-button waiting-guest-btn"
                 disabled={true}
-                style={{ opacity: 0.85, backgroundColor: '#f59e0b', color: 'white', cursor: 'default' }}
               >
                 <Clock className="w-4 h-4" />
                 <span>ממתין לתשובת החייל...</span>
@@ -146,8 +182,6 @@ export default function RequestCard({ post, userRole, onAction, isClaiming, onUp
                   <Loader2 className="w-4 h-4 spin-icon" />
                   <span>שולח למערכת...</span>
                 </>
-              ) : post.status === 'matched' ? (
-                'בקשה זו אושרה'
               ) : showUrgentNotice ? (
                 <>
                   <Clock className="w-4 h-4" />

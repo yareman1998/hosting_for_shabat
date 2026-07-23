@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { ChatMessageItem } from './ChatMessageItem';
 
 export function ChatMessageList({ messages, activeChat, currentUserId, messagesEndRef }) {

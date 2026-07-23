@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 export function ChatMessageItem({ msg, activeChat, currentUserId }) {
   const isMine = msg.sender_id === currentUserId;

@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Send } from 'lucide-react';
 
 export function ChatInput({ messageText, setMessageText, sendMessage }) {

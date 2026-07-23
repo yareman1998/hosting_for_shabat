@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Search, Moon } from 'lucide-react';
 
 export default function SearchFilterPanel({

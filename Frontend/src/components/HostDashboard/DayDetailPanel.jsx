@@ -51,13 +51,6 @@ export default function DayDetailPanel() {
 
   if (!selectedDate) return null;
 
-  const status = computeDayStatus(selectedDate, rules, overrides, bookings);
-  const meta = STATUS_META[status] || STATUS_META.closed;
-  const { dayName, dayNum, monthName, year } = formatDate(selectedDate);
-  const hasOverride = !!overrides[selectedDate];
-  const booking = bookings[selectedDate];
-  const isPast = status === 'past';
-
   const getLocalDateString = (val) => {
     if (!val) return null;
     const d = new Date(val);
@@ -67,6 +60,43 @@ export default function DayDetailPanel() {
     const dd = String(d.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
   };
+
+  const matchedRequests = (posts || []).filter((p) => {
+    if (p.status !== 'matched') return false;
+    const startDateVal = p.start_date || p.requested_date || p.shabbat_date;
+    if (!startDateVal) return false;
+    const startD = getLocalDateString(startDateVal);
+    if (!startD) return false;
+    if (startD === selectedDate) return true;
+    if (p.end_date) {
+      const endD = getLocalDateString(p.end_date);
+      if (endD) {
+        return selectedDate >= startD && selectedDate <= endD;
+      }
+    }
+    return false;
+  });
+
+  const booking = bookings[selectedDate];
+  const activeBooking = booking || (matchedRequests.length > 0 ? {
+    guestName: matchedRequests[0].guest_name || matchedRequests[0].guest_profile?.user?.full_name || 'אורח',
+    guestPhone: matchedRequests[0].guest_phone || matchedRequests[0].guest_profile?.user?.phone_number,
+    guestsCount: matchedRequests[0].guests_count,
+    notes: matchedRequests[0].description,
+    unitName: matchedRequests[0].unit_name,
+    match_id: matchedRequests[0].pending_match_id || matchedRequests[0].id,
+    post: matchedRequests[0]
+  } : null);
+
+  let status = computeDayStatus(selectedDate, rules, overrides, bookings);
+  const isPast = status === 'past';
+
+  if (activeBooking && !isPast) {
+    status = 'booked';
+  }
+  const meta = STATUS_META[status] || STATUS_META.closed;
+  const { dayName, dayNum, monthName, year } = formatDate(selectedDate);
+  const hasOverride = !!overrides[selectedDate];
 
   const pendingRequests = (posts || []).filter((p) => {
     const isPending = p.status === 'pending' || p.status === 'open';
@@ -269,27 +299,39 @@ export default function DayDetailPanel() {
           </div>
         )}
 
-        {status === 'booked' && booking && (
+        {activeBooking && (
           <div className="ddp-booking-card ddp-card-overflow">
             <div className="ddp-card-body">
               <div className="ddp-booking-header">
-                <MessageSquare size={16} />
-                <h3>פרטי האורחים</h3>
+                <User size={16} />
+                <h3>פרטי האורח/ים באירוח זה</h3>
               </div>
               <div className="ddp-booking-row">
-                <span className="ddp-booking-label">שם</span>
-                <span className="ddp-booking-value">{booking.guestName || '—'}</span>
+                <span className="ddp-booking-label">שם האורח</span>
+                <span className="ddp-booking-value font-bold">{activeBooking.guestName || '—'}</span>
               </div>
-              {booking.guestPhone && (
+              {activeBooking.unitName && (
                 <div className="ddp-booking-row">
-                  <span className="ddp-booking-label">טלפון</span>
-                  <span className="ddp-booking-value" dir="ltr">{booking.guestPhone}</span>
+                  <span className="ddp-booking-label">יחידה / תפקיד</span>
+                  <span className="ddp-booking-value">{activeBooking.unitName}</span>
                 </div>
               )}
-              {booking.notes && (
+              {activeBooking.guestsCount && (
+                <div className="ddp-booking-row">
+                  <span className="ddp-booking-label">כמות אורחים</span>
+                  <span className="ddp-booking-value ddp-value-highlight">{activeBooking.guestsCount} חבר'ה</span>
+                </div>
+              )}
+              {activeBooking.guestPhone && (
+                <div className="ddp-booking-row">
+                  <span className="ddp-booking-label">טלפון</span>
+                  <span className="ddp-booking-value" dir="ltr">{activeBooking.guestPhone}</span>
+                </div>
+              )}
+              {activeBooking.notes && (
                 <div className="ddp-booking-row">
                   <span className="ddp-booking-label">הערות</span>
-                  <span className="ddp-booking-value">{booking.notes}</span>
+                  <span className="ddp-booking-value">{activeBooking.notes}</span>
                 </div>
               )}
             </div>
@@ -299,9 +341,9 @@ export default function DayDetailPanel() {
                 <button 
                   onClick={() => {
                     handleClose();
-                    const matchId = booking.match_id || booking.id;
-                    const otherPartyName = booking.guest_name || booking.soldier_name || 'אורח / חייל';
-                    const hostingDate = booking.date || booking.hosting_date || selectedDateStr;
+                    const matchId = activeBooking.match_id || activeBooking.id;
+                    const otherPartyName = activeBooking.guestName || activeBooking.guest_name || 'אורח / חייל';
+                    const hostingDate = activeBooking.date || activeBooking.hosting_date || selectedDate;
                     navigate('/chats', {
                       state: {
                         matchId,
@@ -338,10 +380,10 @@ export default function DayDetailPanel() {
           isOpen={showDetailsModal}
           onClose={() => setShowDetailsModal(false)}
           data={{
-            ...(booking || {}),
-            other_party_name: booking?.guest_name || booking?.soldier_name || 'אורח / חייל',
-            other_party_phone: booking?.guestPhone || booking?.phone || booking?.guest_phone,
-            hosting_date: booking?.date || booking?.hosting_date || selectedDate
+            ...(activeBooking || {}),
+            other_party_name: activeBooking?.guestName || activeBooking?.guest_name || 'אורח / חייל',
+            other_party_phone: activeBooking?.guestPhone || activeBooking?.phone,
+            hosting_date: activeBooking?.date || activeBooking?.hosting_date || selectedDate
           }}
           isHostOverride={true}
         />

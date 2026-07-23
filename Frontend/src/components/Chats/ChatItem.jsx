@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 export function ChatItem({ chat, isActive, onSelectChat }) {
   const formatTime = (dateStr) => {

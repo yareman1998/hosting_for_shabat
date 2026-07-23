@@ -1,5 +1,3 @@
-import React from "react";
-
 // רכיב בסיס משותף לכל האייקונים
 function IconWrapper({ size = 18, className = "", strokeWidth = 2, children, viewBox = "0 0 24 24" }) {
   return (

@@ -126,6 +126,46 @@ export default function AvailabilityCalendar() {
     return set;
   }, [posts]);
 
+  const bookedDatesSet = useMemo(() => {
+    const set = new Set();
+    if (Array.isArray(posts)) {
+      posts.forEach((p) => {
+        if (p.status === 'matched') {
+          const startDateVal = p.start_date || p.requested_date || p.shabbat_date;
+          const endDateVal = p.end_date;
+
+          if (startDateVal) {
+            const startD = new Date(startDateVal);
+            if (!isNaN(startD.getTime())) {
+              const startStr = toDateStr(startD.getFullYear(), startD.getMonth(), startD.getDate());
+              set.add(startStr);
+
+              if (endDateVal) {
+                const endD = new Date(endDateVal);
+                if (!isNaN(endD.getTime()) && endD >= startD) {
+                  const curr = new Date(startD);
+                  while (curr <= endD) {
+                    const cStr = toDateStr(curr.getFullYear(), curr.getMonth(), curr.getDate());
+                    set.add(cStr);
+                    curr.setDate(curr.getDate() + 1);
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+    if (bookings && typeof bookings === 'object') {
+      Object.entries(bookings).forEach(([dStr, b]) => {
+        if (b?.status === 'matched' || b?.status === 'confirmed' || b?.status === 'booked') {
+          set.add(dStr);
+        }
+      });
+    }
+    return set;
+  }, [posts, bookings]);
+
   const dayCells = useMemo(() => {
     const daysInMonth = getDaysInMonth(currentYear, currentMonth);
     const firstDow = getFirstDayOfWeek(currentYear, currentMonth);
@@ -140,7 +180,10 @@ export default function AvailabilityCalendar() {
       const date = new Date(currentYear, currentMonth, d);
       const dayOfWeek = date.getDay();
       const isWeekend = rules.weekendDays.includes(dayOfWeek);
-      const status = computeDayStatus(dateStr, rules, overrides, bookings);
+      let status = computeDayStatus(dateStr, rules, overrides, bookings);
+      if (bookedDatesSet.has(dateStr) && status !== 'past') {
+        status = 'booked';
+      }
       const hasOverride = !!overrides[dateStr];
       const hasPendingRequest = pendingDatesSet.has(dateStr);
       const hasWaitingGuest = waitingGuestDatesSet.has(dateStr);
@@ -148,7 +191,7 @@ export default function AvailabilityCalendar() {
     }
 
     return cells;
-  }, [currentYear, currentMonth, rules, overrides, bookings, pendingDatesSet, waitingGuestDatesSet]);
+  }, [currentYear, currentMonth, rules, overrides, bookings, pendingDatesSet, waitingGuestDatesSet, bookedDatesSet]);
 
   const weekCells = useMemo(() => {
     if (viewMode !== 'week') return null;
@@ -160,14 +203,17 @@ export default function AvailabilityCalendar() {
       const dateStr = toDateStr(d.getFullYear(), d.getMonth(), d.getDate());
       const dayOfWeek = d.getDay();
       const isWeekend = rules.weekendDays.includes(dayOfWeek);
-      const status = computeDayStatus(dateStr, rules, overrides, bookings);
+      let status = computeDayStatus(dateStr, rules, overrides, bookings);
+      if (bookedDatesSet.has(dateStr) && status !== 'past') {
+        status = 'booked';
+      }
       const hasOverride = !!overrides[dateStr];
       const hasPendingRequest = pendingDatesSet.has(dateStr);
       const hasWaitingGuest = waitingGuestDatesSet.has(dateStr);
       cells.push({ day: d.getDate(), dateStr, dayOfWeek, isWeekend, status, hasOverride, hasPendingRequest, hasWaitingGuest, key: dateStr });
     }
     return cells;
-  }, [viewMode, rules, overrides, bookings, pendingDatesSet, waitingGuestDatesSet]);
+  }, [viewMode, rules, overrides, bookings, pendingDatesSet, waitingGuestDatesSet, bookedDatesSet]);
 
   const handleDayClick = (dateStr, status) => {
     if (status === 'past') return;
@@ -189,6 +235,7 @@ export default function AvailabilityCalendar() {
       </div>
 
       <div className="ac-legend">
+        <span className="legend-item"><span className="legend-dot dot--booked" />תפוס (יש אורח)</span>
         <span className="legend-item"><span className="legend-dot dot--pending-flashing" />יש בקשה שטרם אושרה</span>
         <span className="legend-item"><span className="legend-dot dot--notice" />מחכה לתשובת אורח</span>
       </div>

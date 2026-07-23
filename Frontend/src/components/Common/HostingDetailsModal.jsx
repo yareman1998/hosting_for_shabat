@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { useSelector } from 'react-redux';
 import { WhatsAppIcon } from './Icons';
 import { X, Calendar, User, Phone, MapPin, Shield, Users, Home, Info } from 'lucide-react';

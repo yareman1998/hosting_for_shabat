@@ -10,12 +10,12 @@ import {
   Users,
   Building,
   Inbox,
-  User,
-  Bell
+  User
 } from 'lucide-react';
 import { logout } from '../../../store/authSlice';
 import { Logo, LogOutIcon } from '../Icons';
 import { getUserInitials } from '../../../utils/user';
+import NotificationBell from "../NotificationBell/NotificationBell";
 import './Navbar.css';
 
 export default function Navbar() {
@@ -110,11 +110,7 @@ export default function Navbar() {
       </ul>
 
       <div className="navbar-left">
-        <div className="notification-bell">
-          <Bell className="nav-icon" />
-          <span className="bell-badge"></span>
-        </div>
-
+        <NotificationBell />
         <div className="profile-dropdown-container" ref={dropdownRef}>
           <div
             className="profile-circle"

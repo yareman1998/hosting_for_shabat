@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Utensils, Users, Heart, Edit3, Loader2, AlertCircle, Clock } from 'lucide-react';
+import { Utensils, Users, Heart, Edit3, Loader2, AlertCircle, Clock, Check } from 'lucide-react';
 import { formatHebrewDate, getRelativeTimeHebrew, checkPostUrgency } from '../../utils/date';
 import RequestInlineEdit from './RequestInlineEdit';
 import PendingOfferBox from './PendingOfferBox';
@@ -23,12 +23,18 @@ export default function RequestCard({ post, userRole, onAction, isClaiming, onUp
   const isUnapproved = post.status !== 'matched' && post.status !== 'approved';
   const { isUrgent, hoursLeft } = checkPostUrgency(post.requested_date);
   const showUrgentNotice = isUnapproved && isUrgent;
+  const isDirectRequest = Boolean(post.is_direct_request);
 
-  const statusLabel = post.status === 'pending'
-    ? (userRole === 'guest' ? 'ממתין לאישורך' : 'ממתין לאישור החייל')
-    : post.status === 'matched' || post.status === 'approved'
-    ? 'אושר'
-    : 'פתוח';
+  let statusLabel = 'פתוח';
+  if (post.status === 'matched' || post.status === 'approved') {
+    statusLabel = 'אושר';
+  } else if (post.status === 'pending') {
+    if (isDirectRequest) {
+      statusLabel = userRole === 'host' ? 'ממתין לאישורך' : 'ממתין לאישור המארח';
+    } else {
+      statusLabel = userRole === 'guest' ? 'ממתין לאישורך' : 'ממתין לתשובת החייל';
+    }
+  }
 
   if (isEditingInline) {
     return (
@@ -44,9 +50,9 @@ export default function RequestCard({ post, userRole, onAction, isClaiming, onUp
   }
 
   return (
-    <div className={`request-card ${showUrgentNotice ? 'urgent-card' : ''}`}>
+    <div className={`request-card ${showUrgentNotice ? 'urgent-border-highlight' : ''}`}>
       <div className="card-header">
-        <div className="status-badge-container">
+        <div className="status-badges-group">
           {showUrgentNotice && (
             <span className="status-badge urgent-badge">
               <AlertCircle size={13} />
@@ -65,7 +71,26 @@ export default function RequestCard({ post, userRole, onAction, isClaiming, onUp
         </div>
       </div>
 
-      <p className="card-description">{post.description}</p>
+      {(() => {
+        const desc = post.description || '';
+        const matchReturn = desc.match(/מביאים לאירוח:\s*([^\n]+)/);
+        const inReturnVal = matchReturn ? matchReturn[1].trim() : null;
+        const cleanDesc = desc.replace(/מביאים לאירוח:[^\n]+/, '').trim();
+
+        return (
+          <div className="card-description-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '8px 0 12px 0' }}>
+            {inReturnVal && (
+              <div style={{ backgroundColor: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', padding: '6px 10px', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, width: 'fit-content' }}>
+                <span>מביאים לאירוח: </span>
+                <span style={{ fontWeight: 700 }}>{inReturnVal}</span>
+              </div>
+            )}
+            {cleanDesc && (
+              <p className="card-description" style={{ margin: 0 }}>{cleanDesc}</p>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="card-tags">
         <span className="card-tag tag-kashrut">
@@ -79,7 +104,8 @@ export default function RequestCard({ post, userRole, onAction, isClaiming, onUp
         <span className="tag-time">{timeAgo}</span>
       </div>
 
-      {userRole === 'guest' && post.status === 'pending' && (
+      {/* Show PendingOfferBox only when a host offered on guest's public post */}
+      {userRole === 'guest' && post.status === 'pending' && !isDirectRequest && (
         <PendingOfferBox
           post={post}
           onUpdateSuccess={onUpdateSuccess}
@@ -89,14 +115,26 @@ export default function RequestCard({ post, userRole, onAction, isClaiming, onUp
       <div className="card-actions">
         {userRole === 'host' ? (
           post.status === 'pending' ? (
-            <button
-              className="action-button claim-button"
-              disabled={true}
-              style={{ opacity: 0.85, backgroundColor: '#f59e0b', color: 'white', cursor: 'default' }}
-            >
-              <Clock className="w-4 h-4" />
-              <span>ממתין לתשובת החייל...</span>
-            </button>
+            isDirectRequest ? (
+              <button
+                className="action-button claim-button"
+                onClick={() => onAction && onAction(post)}
+                disabled={isClaiming}
+                style={{ backgroundColor: '#16a34a', color: 'white' }}
+              >
+                {isClaiming ? <Loader2 className="w-4 h-4 spin-icon" /> : <Check className="w-4 h-4" />}
+                <span>אישור בקשה</span>
+              </button>
+            ) : (
+              <button
+                className="action-button claim-button"
+                disabled={true}
+                style={{ opacity: 0.85, backgroundColor: '#f59e0b', color: 'white', cursor: 'default' }}
+              >
+                <Clock className="w-4 h-4" />
+                <span>ממתין לתשובת החייל...</span>
+              </button>
+            )
           ) : (
             <button
               className={`action-button claim-button ${showUrgentNotice ? 'urgent-claim-btn' : ''}`}

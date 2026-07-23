@@ -94,6 +94,8 @@ export default function useHostSearch() {
           profile.kashrut_level === 'MEHADRIN' ? 'מהדרין' : 'כשר'
         ].filter(Boolean),
         image_url: profile.image_url || null,
+        date: profile.shabbat_date || profile.next_available_date || profile.date || (profile.upcoming_open_dates && profile.upcoming_open_dates[0]) || null,
+        shabbat_date: profile.shabbat_date || profile.next_available_date || profile.date || null,
         upcoming_open_dates: profile.upcoming_open_dates || [],
         upcoming_open_days: profile.upcoming_open_days || [],
         is_available_this_week: profile.is_available_this_week !== undefined ? profile.is_available_this_week : true

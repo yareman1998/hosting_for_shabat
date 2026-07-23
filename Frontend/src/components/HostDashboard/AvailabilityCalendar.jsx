@@ -42,9 +42,50 @@ export default function AvailabilityCalendar() {
   const dispatch = useDispatch();
   const { rules, overrides, bookings, currentMonth, currentYear, selectedDate, viewMode } =
     useSelector((s) => s.availability);
+  const posts = useSelector((s) => s.requests?.posts || []);
 
   const today = new Date();
   const todayStr = toDateStr(today.getFullYear(), today.getMonth(), today.getDate());
+
+  const pendingDatesSet = useMemo(() => {
+    const set = new Set();
+    if (Array.isArray(posts)) {
+      posts.forEach((p) => {
+        if (p.status === 'pending' || p.status === 'open') {
+          const startDateVal = p.start_date || p.requested_date || p.shabbat_date;
+          const endDateVal = p.end_date;
+
+          if (startDateVal) {
+            const startD = new Date(startDateVal);
+            if (!isNaN(startD.getTime())) {
+              const startStr = toDateStr(startD.getFullYear(), startD.getMonth(), startD.getDate());
+              set.add(startStr);
+
+              if (endDateVal) {
+                const endD = new Date(endDateVal);
+                if (!isNaN(endD.getTime()) && endD >= startD) {
+                  const curr = new Date(startD);
+                  while (curr <= endD) {
+                    const cStr = toDateStr(curr.getFullYear(), curr.getMonth(), curr.getDate());
+                    set.add(cStr);
+                    curr.setDate(curr.getDate() + 1);
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+    if (bookings && typeof bookings === 'object') {
+      Object.entries(bookings).forEach(([dStr, b]) => {
+        if (b?.status === 'pending') {
+          set.add(dStr);
+        }
+      });
+    }
+    return set;
+  }, [posts, bookings]);
 
   const dayCells = useMemo(() => {
     const daysInMonth = getDaysInMonth(currentYear, currentMonth);
@@ -62,11 +103,12 @@ export default function AvailabilityCalendar() {
       const isWeekend = rules.weekendDays.includes(dayOfWeek);
       const status = computeDayStatus(dateStr, rules, overrides, bookings);
       const hasOverride = !!overrides[dateStr];
-      cells.push({ empty: false, day: d, dateStr, dayOfWeek, isWeekend, status, hasOverride, key: dateStr });
+      const hasPendingRequest = pendingDatesSet.has(dateStr);
+      cells.push({ empty: false, day: d, dateStr, dayOfWeek, isWeekend, status, hasOverride, hasPendingRequest, key: dateStr });
     }
 
     return cells;
-  }, [currentYear, currentMonth, rules, overrides, bookings]);
+  }, [currentYear, currentMonth, rules, overrides, bookings, pendingDatesSet]);
 
   const weekCells = useMemo(() => {
     if (viewMode !== 'week') return null;
@@ -80,10 +122,11 @@ export default function AvailabilityCalendar() {
       const isWeekend = rules.weekendDays.includes(dayOfWeek);
       const status = computeDayStatus(dateStr, rules, overrides, bookings);
       const hasOverride = !!overrides[dateStr];
-      cells.push({ day: d.getDate(), dateStr, dayOfWeek, isWeekend, status, hasOverride, key: dateStr });
+      const hasPendingRequest = pendingDatesSet.has(dateStr);
+      cells.push({ day: d.getDate(), dateStr, dayOfWeek, isWeekend, status, hasOverride, hasPendingRequest, key: dateStr });
     }
     return cells;
-  }, [viewMode, rules, overrides, bookings]);
+  }, [viewMode, rules, overrides, bookings, pendingDatesSet]);
 
   const handleDayClick = (dateStr, status) => {
     if (status === 'past') return;
@@ -136,6 +179,9 @@ export default function AvailabilityCalendar() {
                   aria-pressed={cell.dateStr === selectedDate}
                 >
                   <span className="ac-day-number">{cell.day}</span>
+                  {cell.hasPendingRequest && (
+                    <span className="ac-pending-request-dot" title="ישנה בקשת אירוח ממתינה" />
+                  )}
                   {cell.hasOverride && <span className="ac-override-dot" title="שינוי ידני" />}
                   {cell.status === 'booked' && <span className="ac-booking-dot" />}
                   {STATUS_LABEL[cell.status] && cell.status !== 'past' && (

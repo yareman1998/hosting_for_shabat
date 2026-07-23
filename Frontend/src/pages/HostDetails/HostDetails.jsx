@@ -8,7 +8,8 @@ import HostDetailsHero from '../../components/HostDetails/HostDetailsHero';
 import HostDetailsStats from '../../components/HostDetails/HostDetailsStats';
 import HostDetailsAbout from '../../components/HostDetails/HostDetailsAbout';
 import HostDetailsSidebar from '../../components/HostDetails/HostDetailsSidebar';
-import { getUpcomingFridayDateStr } from '../../utils/shabbat';
+import BookingRequestModal from '../../components/HostDetails/BookingRequestModal';
+import { getUpcomingFridayDateStr, formatHostOpenDates } from '../../utils/shabbat';
 import './HostDetails.css';
 
 const DEFAULT_IMAGE =
@@ -84,7 +85,8 @@ export default function HostDetails() {
             image_url: found.image_url || null,
             rating: found.rating || null,
             reviews_count: found.reviews_count || 0,
-            phone_number: found.phone_number || found.user?.phone_number || ''
+            phone_number: found.phone_number || found.user?.phone_number || '',
+            shabbat_date: found.shabbat_date || found.requested_date || found.available_date || null
           };
           setHost(mapped);
         }
@@ -101,20 +103,39 @@ export default function HostDetails() {
     };
   }, [id, host]);
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const handleBack = () => {
     navigate('/find-host');
   };
 
-  const handleSendBookingRequest = async () => {
+  const handleSendBookingRequest = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleModalSubmit = async ({ selectedDate, selectedDates, guestsCount, notes }) => {
     setRequestStatus('submitting');
     try {
       if (host?.id) {
-        await bookingsApi.requestBooking({ host_profile_id: host.id });
+        const sortedDates = selectedDates && selectedDates.length > 0 ? [...selectedDates].sort() : [selectedDate];
+        const startIso = sortedDates[0];
+        const endIso = sortedDates.length > 1 ? sortedDates[sortedDates.length - 1] : null;
+
+        await bookingsApi.requestBooking({
+          host_profile_id: host.id,
+          requested_date: startIso,
+          start_date: startIso,
+          end_date: endIso,
+          nights_count: sortedDates.length,
+          guests_count: guestsCount,
+          description: notes
+        });
         dispatch(fetchPosts());
       }
     } catch (err) {
       console.warn('Booking request notice:', err);
     } finally {
+      setIsModalOpen(false);
       setRequestStatus('success');
       setToastMessage(`בקשת אירוח נשלחה בהצלחה אל ${hostName}!`);
     }
@@ -155,7 +176,7 @@ export default function HostDetails() {
   const reviewsCount = host?.reviews_count ?? host?.review_count ?? 0;
   const phone = host?.phone_number || host?.phone || '';
 
-  const upcomingFridayDate = getUpcomingFridayDateStr(host?.shabbat_date);
+  const upcomingFridayDate = formatHostOpenDates(host) || getUpcomingFridayDateStr(host?.shabbat_date);
 
   if (loading) {
     return (
@@ -217,6 +238,14 @@ export default function HostDetails() {
         </div>
 
       </div>
+
+      <BookingRequestModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        host={host}
+        onSubmit={handleModalSubmit}
+        isSubmitting={requestStatus === 'submitting'}
+      />
     </main>
   );
 }

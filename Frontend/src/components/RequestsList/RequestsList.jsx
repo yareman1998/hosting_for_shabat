@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import RequestCard from './RequestCard';
 import CreatePostModal from './CreatePostModal';
-import { postsApi } from '../../api/api';
+import { postsApi, bookingsApi } from '../../api/api';
 import { checkPostUrgency } from '../../utils/date';
 import { fetchPosts } from '../../store/requestsSlice';
 import './RequestsList.css';
@@ -33,8 +33,16 @@ export default function RequestsList({ userRole: userRoleProp }) {
         });
         setActiveFilter(hasUrgent ? 'urgent' : 'pending');
       } else if (currentRole === 'guest') {
-        const hasPendingApproval = posts.some((post) => post.status === 'pending');
-        setActiveFilter(hasPendingApproval ? 'pending' : 'all');
+        const hasWaitingHost = posts.some((post) => post.status === 'pending' && Boolean(post.is_direct_request));
+        const hasPendingApproval = posts.some((post) => post.status === 'pending' && !post.is_direct_request);
+
+        if (hasWaitingHost) {
+          setActiveFilter('waiting_host');
+        } else if (hasPendingApproval) {
+          setActiveFilter('pending');
+        } else {
+          setActiveFilter('all');
+        }
       }
       setHasInitializedFilter(true);
     }
@@ -52,8 +60,13 @@ export default function RequestsList({ userRole: userRoleProp }) {
       const { isUrgent } = checkPostUrgency(post.requested_date);
       return isUnapproved && isUrgent;
     }
+    if (activeFilter === 'waiting_host') {
+      return post.status === 'pending' && Boolean(post.is_direct_request);
+    }
     if (activeFilter === 'pending') {
-      return currentRole === 'guest' ? post.status === 'pending' : (post.status === 'open' || post.status === 'pending');
+      return currentRole === 'guest'
+        ? (post.status === 'pending' && !post.is_direct_request)
+        : (post.status === 'open' || post.status === 'pending');
     }
     if (activeFilter === 'open') {
       return post.status === 'open';
@@ -82,14 +95,17 @@ export default function RequestsList({ userRole: userRoleProp }) {
   const [editingPost, setEditingPost] = useState(null);
 
   const handleAction = async (post) => {
-    // Real API implementation
     if (currentRole === 'host') {
       try {
         setClaimingPostId(post.id);
-        await postsApi.claimPost(post.id);
-        alert('הבקשה נתפסה בהצלחה!');
+        if (post.pending_match_id) {
+          await bookingsApi.respondToBooking(post.pending_match_id, 'approved');
+        } else {
+          await postsApi.claimPost(post.id);
+        }
+        dispatch(fetchPosts());
       } catch (err) {
-        console.error('Failed to claim post:', err);
+        console.error('Failed to claim/approve post:', err);
         alert('שגיאה באישור הבקשה: ' + (err.response?.data?.detail || err.message));
       } finally {
         setClaimingPostId(null);
@@ -99,10 +115,12 @@ export default function RequestsList({ userRole: userRoleProp }) {
     }
   };
 
-  const pendingGuestCount = localPosts.filter(p => p.status === 'pending').length;
+  const pendingForGuestCount = localPosts.filter(p => p.status === 'pending' && !p.is_direct_request).length;
+  const waitingHostCount = localPosts.filter(p => p.status === 'pending' && Boolean(p.is_direct_request)).length;
 
   const filterTabs = currentRole === 'guest' ? [
-    { id: 'pending', label: pendingGuestCount > 0 ? `ממתין לאישורך (${pendingGuestCount})` : 'ממתין לאישורך' },
+    { id: 'waiting_host', label: waitingHostCount > 0 ? `מחכה לאישור מארח (${waitingHostCount})` : 'מחכה לאישור מארח' },
+    { id: 'pending', label: pendingForGuestCount > 0 ? `ממתין לאישורך (${pendingForGuestCount})` : 'ממתין לאישורך' },
     { id: 'open', label: 'מחפש מארח' },
     { id: 'all', label: 'הכל' },
     { id: 'approved', label: 'מאושר' },

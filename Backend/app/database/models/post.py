@@ -42,6 +42,9 @@ class GuestPost(Base):
     claimed_by_host_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("host_profiles.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    is_direct_request: Mapped[bool] = mapped_column(
+        default=False, server_default=text("false")
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=func.now(),

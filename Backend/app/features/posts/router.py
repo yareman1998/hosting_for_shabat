@@ -233,6 +233,7 @@ async def claim_post(
         
     post.status = PostStatus.PENDING
     post.claimed_by_host_id = current_user.host_profile.id
+    post.is_direct_request = False
     
     existing_match = db.query(Match).filter(
         Match.guest_post_id == post.id,

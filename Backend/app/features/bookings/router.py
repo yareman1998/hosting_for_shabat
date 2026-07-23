@@ -37,6 +37,13 @@ def get_bookings_count(
         "total_count": posts_count + bookings_count
     }
 
+def get_upcoming_friday_datetime() -> datetime:
+    now_utc = datetime.now(timezone.utc)
+    today = now_utc.date()
+    days_until_friday = (4 - today.weekday()) % 7
+    friday_date = today + timedelta(days=days_until_friday)
+    return datetime(friday_date.year, friday_date.month, friday_date.day, 0, 0, 0, tzinfo=timezone.utc)
+
 @router.post("/bookings/request", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
 async def request_booking(
     req: BookingRequestCreate,
@@ -50,23 +57,25 @@ async def request_booking(
         )
         
     guest_post_id = req.guest_post_id
+    target_date = req.requested_date or req.start_date or get_upcoming_friday_datetime()
+    target_description = req.description or "בקשת אירוח ישירה למארח"
+    target_guests = req.guests_count or 1
+
     if not guest_post_id:
-        # Find latest open guest post or create a default one
-        post = db.query(GuestPost).filter(
-            GuestPost.guest_profile_id == current_user.guest_profile.id,
-            GuestPost.status == PostStatus.OPEN
-        ).order_by(GuestPost.created_at.desc()).first()
-        
-        if not post:
-            post = GuestPost(
-                guest_profile_id=current_user.guest_profile.id,
-                requested_date=datetime.now(timezone.utc) + timedelta(days=2), # Default to upcoming date
-                description="בקשת אירוח ישירה למארח",
-                guests_count=1,
-                status=PostStatus.OPEN
-            )
-            db.add(post)
-            db.flush()
+        post = GuestPost(
+            guest_profile_id=current_user.guest_profile.id,
+            requested_date=target_date,
+            start_date=req.start_date or target_date,
+            end_date=req.end_date,
+            nights_count=req.nights_count or 1,
+            description=target_description,
+            guests_count=target_guests,
+            claimed_by_host_id=req.host_profile_id,
+            is_direct_request=True,
+            status=PostStatus.PENDING
+        )
+        db.add(post)
+        db.flush()
         guest_post_id = post.id
     else:
         post = db.query(GuestPost).filter(
@@ -78,6 +87,16 @@ async def request_booking(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Guest post not found or not owned by you"
             )
+        post.requested_date = target_date
+        if req.start_date: post.start_date = req.start_date
+        if req.end_date: post.end_date = req.end_date
+        if req.nights_count: post.nights_count = req.nights_count
+        if req.description: post.description = req.description
+        if req.guests_count: post.guests_count = req.guests_count
+        post.claimed_by_host_id = req.host_profile_id
+        post.is_direct_request = True
+        post.status = PostStatus.PENDING
+        db.flush()
         
     existing = db.query(Match).filter(
         Match.guest_post_id == guest_post_id,

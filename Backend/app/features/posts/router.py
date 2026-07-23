@@ -1,8 +1,12 @@
 import uuid
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+import jwt
+import asyncio
+from typing import List, Dict
+from datetime import datetime, timezone
+from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, Query
 from sqlalchemy.orm import Session
-from app.database.session import get_db
+from app.core.config import settings
+from app.database.session import get_db, SessionLocal
 from app.database.models.user import User, UserType
 from app.database.models.post import GuestPost, PostStatus
 from app.database.models.match import Match, MatchStatus
@@ -10,6 +14,54 @@ from app.features.auth.services import get_current_user
 from app.features.posts.schemas import GuestPostCreate, GuestPostResponse
 
 router = APIRouter(prefix="/posts", tags=["Guest Posts"])
+
+class PostConnectionManager:
+    """Manages active WebSocket connections for posts feeds, grouped by user ID and type."""
+    def __init__(self):
+        # We store connections as a list of dicts: {"websocket": ws, "user_id": uid, "user_type": utype}
+        self.active_connections = []
+
+    async def connect(self, websocket: WebSocket, user_id: uuid.UUID, user_type: UserType):
+        await websocket.accept()
+        self.active_connections.append({
+            "websocket": websocket,
+            "user_id": user_id,
+            "user_type": user_type
+        })
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections = [
+            conn for conn in self.active_connections if conn["websocket"] != websocket
+        ]
+
+    async def broadcast_updates(self):
+        """Recalculate and send updates to all active clients according to their role."""
+        with SessionLocal() as db:
+            # Pre-fetch future open posts for hosts
+            now = datetime.now(timezone.utc)
+            open_posts = db.query(GuestPost).filter(
+                GuestPost.status == PostStatus.OPEN,
+                GuestPost.requested_date >= now
+            ).all()
+            open_posts.sort(key=lambda p: (not p.is_urgent, p.requested_date))
+            open_posts_data = [GuestPostResponse.model_validate(p).model_dump(mode="json") for p in open_posts]
+
+            for conn in list(self.active_connections):
+                try:
+                    if conn["user_type"] == UserType.HOST:
+                        # Hosts get open future posts
+                        await conn["websocket"].send_json(open_posts_data)
+                    elif conn["user_type"] == UserType.GUEST:
+                        # Guests only get their own posts
+                        guest_posts = db.query(GuestPost).join(GuestPost.guest_profile).filter(
+                            GuestPost.guest_profile.has(user_id=conn["user_id"])
+                        ).order_by(GuestPost.created_at.desc()).all()
+                        guest_posts_data = [GuestPostResponse.model_validate(p).model_dump(mode="json") for p in guest_posts]
+                        await conn["websocket"].send_json(guest_posts_data)
+                except Exception as e:
+                    print(f"[WebSocket Broadcast Error] Failed sending update to user {conn['user_id']}: {e}")
+
+post_manager = PostConnectionManager()
 
 @router.post("", response_model=GuestPostResponse, status_code=status.HTTP_201_CREATED)
 def create_post(
@@ -33,16 +85,36 @@ def create_post(
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
+    
+    # Broadcast live updates to active WebSockets
+    asyncio.create_task(post_manager.broadcast_updates())
+    
     return new_post
 
 @router.get("", response_model=List[GuestPostResponse])
-def get_open_posts(
+def get_posts(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    posts = db.query(GuestPost).filter(GuestPost.status == PostStatus.OPEN).all()
-    posts.sort(key=lambda p: (not p.is_urgent, p.requested_date))
-    return posts
+    if current_user.user_type == UserType.HOST:
+        now = datetime.now(timezone.utc)
+        posts = db.query(GuestPost).filter(
+            GuestPost.status == PostStatus.OPEN,
+            GuestPost.requested_date >= now
+        ).all()
+        posts.sort(key=lambda p: (not p.is_urgent, p.requested_date))
+        return posts
+    elif current_user.user_type == UserType.GUEST:
+        if not current_user.guest_profile:
+            return []
+        posts = db.query(GuestPost).filter(
+            GuestPost.guest_profile_id == current_user.guest_profile.id
+        ).order_by(GuestPost.created_at.desc()).all()
+        return posts
+    else:
+        posts = db.query(GuestPost).filter(GuestPost.status == PostStatus.OPEN).all()
+        posts.sort(key=lambda p: (not p.is_urgent, p.requested_date))
+        return posts
 
 @router.post("/{post_id}/claim")
 def claim_post(
@@ -81,8 +153,73 @@ def claim_post(
     db.add(match)
     db.commit()
     
+    # Broadcast live updates to active WebSockets
+    asyncio.create_task(post_manager.broadcast_updates())
+    
     return {
         "message": "Guest post claimed successfully",
         "match_id": str(match.id),
         "post_status": post.status
     }
+
+@router.websocket("/ws")
+async def websocket_posts_endpoint(
+    websocket: WebSocket,
+    token: str = Query(...)
+):
+    """WebSocket endpoint for real-time posts feed subscription based on user role."""
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        user_id_str = payload.get("sub")
+        if not user_id_str:
+            await websocket.close(code=4001, reason="Invalid token payload")
+            return
+        user_uuid = uuid.UUID(user_id_str)
+    except Exception:
+        await websocket.close(code=4001, reason="Could not validate credentials")
+        return
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.id == user_uuid).first()
+        if not user:
+            await websocket.close(code=4001, reason="User not found")
+            return
+        user_id = user.id
+        user_type = user.user_type
+    finally:
+        db.close()
+
+    await post_manager.connect(websocket, user_id, user_type)
+    
+    try:
+        # Send initial list immediately
+        db = SessionLocal()
+        try:
+            if user_type == UserType.HOST:
+                now = datetime.now(timezone.utc)
+                posts = db.query(GuestPost).filter(
+                    GuestPost.status == PostStatus.OPEN,
+                    GuestPost.requested_date >= now
+                ).all()
+                posts.sort(key=lambda p: (not p.is_urgent, p.requested_date))
+                posts_data = [GuestPostResponse.model_validate(p).model_dump(mode="json") for p in posts]
+                await websocket.send_json(posts_data)
+            elif user_type == UserType.GUEST:
+                posts = db.query(GuestPost).join(GuestPost.guest_profile).filter(
+                    GuestPost.guest_profile.has(user_id=user_id)
+                ).order_by(GuestPost.created_at.desc()).all()
+                posts_data = [GuestPostResponse.model_validate(p).model_dump(mode="json") for p in posts]
+                await websocket.send_json(posts_data)
+        finally:
+            db.close()
+
+        while True:
+            # Maintain the connection open
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        post_manager.disconnect(websocket)
+    except Exception as e:
+        print(f"[WebSocket Disconnect Error] {e}")
+        post_manager.disconnect(websocket)
+

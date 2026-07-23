@@ -1,5 +1,6 @@
 import uuid
 import urllib.parse
+from datetime import datetime, timezone, timedelta
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -13,6 +14,28 @@ from app.agent.services import AgentService
 
 router = APIRouter(prefix="", tags=["Bookings & Matches"])
 
+@router.get("/bookings/count")
+def get_bookings_count(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.user_type != UserType.GUEST or not current_user.guest_profile:
+        return {"posts_count": 0, "bookings_count": 0, "total_count": 0}
+        
+    posts_count = db.query(GuestPost).filter(
+        GuestPost.guest_profile_id == current_user.guest_profile.id
+    ).count()
+    
+    bookings_count = db.query(Match).join(GuestPost).filter(
+        GuestPost.guest_profile_id == current_user.guest_profile.id
+    ).count()
+    
+    return {
+        "posts_count": posts_count,
+        "bookings_count": bookings_count,
+        "total_count": posts_count + bookings_count
+    }
+
 @router.post("/bookings/request", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
 def request_booking(
     req: BookingRequestCreate,
@@ -25,25 +48,45 @@ def request_booking(
             detail="Only guests can request bookings"
         )
         
-    post = db.query(GuestPost).filter(
-        GuestPost.id == req.guest_post_id,
-        GuestPost.guest_profile_id == current_user.guest_profile.id
-    ).first()
-    if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Guest post not found or not owned by you"
-        )
+    guest_post_id = req.guest_post_id
+    if not guest_post_id:
+        # Find latest open guest post or create a default one
+        post = db.query(GuestPost).filter(
+            GuestPost.guest_profile_id == current_user.guest_profile.id,
+            GuestPost.status == PostStatus.OPEN
+        ).order_by(GuestPost.created_at.desc()).first()
+        
+        if not post:
+            post = GuestPost(
+                guest_profile_id=current_user.guest_profile.id,
+                requested_date=datetime.now(timezone.utc) + timedelta(days=2), # Default to upcoming date
+                description="בקשת אירוח ישירה למארח",
+                guests_count=1,
+                status=PostStatus.OPEN
+            )
+            db.add(post)
+            db.flush()
+        guest_post_id = post.id
+    else:
+        post = db.query(GuestPost).filter(
+            GuestPost.id == guest_post_id,
+            GuestPost.guest_profile_id == current_user.guest_profile.id
+        ).first()
+        if not post:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Guest post not found or not owned by you"
+            )
         
     existing = db.query(Match).filter(
-        Match.guest_post_id == req.guest_post_id,
+        Match.guest_post_id == guest_post_id,
         Match.host_profile_id == req.host_profile_id
     ).first()
     if existing:
         return existing
         
     new_match = Match(
-        guest_post_id=req.guest_post_id,
+        guest_post_id=guest_post_id,
         host_profile_id=req.host_profile_id,
         status=MatchStatus.PENDING
     )

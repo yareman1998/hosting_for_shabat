@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { authApi } from '../../api/api';
+import { useDispatch } from 'react-redux';
+import { loginUser } from '../../store/authSlice';
 import { Shield, Eye, EyeOff } from 'lucide-react';
 import './Login.css';
 
-export default function Login({ onLoginSuccess }) {
+export default function Login() {
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -12,6 +13,7 @@ export default function Login({ onLoginSuccess }) {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
 
   const isLoginActive = location.pathname === '/login' || location.pathname === '/';
 
@@ -31,11 +33,10 @@ export default function Login({ onLoginSuccess }) {
     setLoading(true);
 
     try {
-      await authApi.login(formData);
-      if (onLoginSuccess) await onLoginSuccess();
+      await dispatch(loginUser(formData)).unwrap();
       navigate('/');
     } catch (err) {
-      setError('כתובת אימייל או סיסמה שגויים.');
+      setError(err || 'כתובת אימייל או סיסמה שגויים.');
     } finally {
       setLoading(false);
     }

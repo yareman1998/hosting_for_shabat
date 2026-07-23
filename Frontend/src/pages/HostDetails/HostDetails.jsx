@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { fetchPosts } from '../../store/requestsSlice';
 import { listingsApi, bookingsApi } from '../../api/api';
 import HostDetailsHeader from '../../components/HostDetails/HostDetailsHeader';
 import HostDetailsHero from '../../components/HostDetails/HostDetailsHero';
@@ -18,6 +20,7 @@ export default function HostDetails() {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [host, setHost] = useState(() => {
     if (location.state?.host) return location.state.host;
@@ -106,7 +109,8 @@ export default function HostDetails() {
     setRequestStatus('submitting');
     try {
       if (host?.id) {
-        await bookingsApi.requestBooking({ listing_id: host.id, host_id: host.user_id || host.id });
+        await bookingsApi.requestBooking({ host_profile_id: host.id });
+        dispatch(fetchPosts());
       }
     } catch (err) {
       console.warn('Booking request notice:', err);

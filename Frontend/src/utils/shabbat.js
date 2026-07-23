@@ -20,7 +20,7 @@ export function formatHebrewToday(date = new Date()) {
 /**
  * Calculate the Date object for the upcoming Friday.
  */
-export function getUpcomingFriday(date = new Date()) {
+function getUpcomingFriday(date = new Date()) {
   const target = new Date(date.getTime());
   const day = target.getDay(); // 0: Sun, 5: Fri, 6: Sat
 

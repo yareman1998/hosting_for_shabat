@@ -1,29 +1,21 @@
 import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { getShabbatInfo, getCachedShabbatInfo, formatHebrewToday } from "../../utils/shabbat";
-import { authApi } from "../../api/api";
 
 export default function FindHostHeader() {
-  const [shabbatData, setShabbatData] = useState(() => getCachedShabbatInfo('ירושלים'));
-  const [loading, setLoading] = useState(() => !getCachedShabbatInfo('ירושלים'));
+  const user = useSelector((state) => state.auth.user);
+  
+  // Determine city based on logged-in user profile
+  const profile = user?.profile;
+  const userCity = profile?.city || profile?.origin_city || 'ירושלים';
+
+  const [shabbatData, setShabbatData] = useState(() => getCachedShabbatInfo(userCity));
+  const [loading, setLoading] = useState(() => !getCachedShabbatInfo(userCity));
 
   useEffect(() => {
     let isMounted = true;
-    const token = localStorage.getItem('token');
 
     async function loadData() {
-      let userCity = 'ירושלים';
-
-      // 1. Fetch user city only if token exists
-      if (token) {
-        try {
-          const res = await authApi.getMe();
-          const profile = res.data?.profile;
-          userCity = profile?.city || profile?.origin_city || 'ירושלים';
-        } catch (err) {
-          console.warn('Could not fetch user city profile, using default:', err);
-        }
-      }
-
       // Check cache first for user city
       const cached = getCachedShabbatInfo(userCity);
       if (cached && isMounted) {
@@ -31,7 +23,7 @@ export default function FindHostHeader() {
         setLoading(false);
       }
 
-      // 2. Fetch Shabbat info (handles 6-hour cache check internally)
+      // Fetch Shabbat info (handles 6-hour cache check internally)
       const info = await getShabbatInfo(userCity);
       
       if (isMounted) {
@@ -45,7 +37,7 @@ export default function FindHostHeader() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [userCity]);
 
   // Early return for loading state (Cleaner than a render function)
   if (loading) {

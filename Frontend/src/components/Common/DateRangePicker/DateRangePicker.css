@@ -1,0 +1,234 @@
+/* =========================================
+   DATE RANGE PICKER (Booking.com style)
+========================================= */
+.drp-container {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+  user-select: none;
+  font-family: inherit;
+  width: 100%;
+  max-width: 720px;
+  box-sizing: border-box;
+  margin: 0 auto;
+}
+
+.drp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-color, #f1f5f9);
+}
+
+.drp-header-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-foreground, #1e293b);
+}
+
+.drp-icon {
+  color: #2563eb;
+}
+
+.drp-duration-badge {
+  background: linear-gradient(135deg, rgb(27, 61, 123), rgb(37, 99, 235));
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 99px;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  animation: drpPop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes drpPop {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.drp-calendars-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drp-nav-btn {
+  position: absolute;
+  top: 4px;
+  z-index: 10;
+  background: var(--bg-input, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-foreground, #334155);
+  transition: all 0.2s ease;
+}
+
+.drp-nav-btn:hover:not(:disabled) {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+  transform: scale(1.05);
+}
+
+.drp-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.drp-nav-btn.prev {
+  right: 0;
+}
+
+.drp-nav-btn.next {
+  left: 0;
+}
+
+.drp-calendars {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .drp-calendars {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.drp-month {
+  display: flex;
+  flex-direction: column;
+}
+
+.drp-month-title {
+  text-align: center;
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: var(--text-foreground, #0f172a);
+}
+
+.drp-weekdays-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.drp-weekday {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted, #94a3b8);
+  padding: 6px 0;
+}
+
+.drp-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px 0;
+}
+
+.drp-day-cell {
+  position: relative;
+  height: 40px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-foreground, #1e293b);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.drp-day-cell.empty {
+  cursor: default;
+  pointer-events: none;
+}
+
+.drp-day-cell span {
+  position: relative;
+  z-index: 2;
+}
+
+/* Hover & Normal states */
+.drp-day-cell:hover:not(.disabled):not(.empty) {
+  background-color: #eff6ff;
+  border-radius: 50%;
+  color: #2563eb;
+  font-weight: 700;
+}
+
+/* Range background highlights */
+.drp-day-cell.is-in-range,
+.drp-day-cell.is-hover-range {
+  background-color: #dbeafe !important;
+  color: #1e40af;
+  border-radius: 0 !important;
+}
+
+/* Start Date */
+.drp-day-cell.is-start {
+  background: linear-gradient(135deg, rgb(27, 61, 123), rgb(37, 99, 235)) !important;
+  color: white !important;
+  font-weight: 700;
+  border-top-right-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+/* End Date */
+.drp-day-cell.is-end,
+.drp-day-cell.is-hover-end {
+  background: linear-gradient(135deg, rgb(27, 61, 123), rgb(37, 99, 235)) !important;
+  color: white !important;
+  font-weight: 700;
+  border-top-left-radius: 12px !important;
+  border-bottom-left-radius: 12px !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+/* Single date selection when start and end are same or end is not set yet */
+.drp-day-cell.is-start:not(.is-in-range):not(.is-hover-range) {
+  border-radius: 12px !important;
+}
+
+/* Disabled (past / unavailable) */
+.drp-day-cell.disabled {
+  color: #cbd5e1;
+  text-decoration: line-through;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.drp-day-cell.disabled:hover {
+  background: transparent !important;
+}

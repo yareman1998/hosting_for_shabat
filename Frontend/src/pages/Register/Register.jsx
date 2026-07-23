@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { setAuthCredentials, fetchCurrentUser } from '../../store/authSlice';
 import { Shield, Eye, EyeOff } from 'lucide-react';
 import './Register.css';
 
-export default function Register({ onLoginSuccess }) {
+export default function Register() {
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -25,6 +27,7 @@ export default function Register({ onLoginSuccess }) {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
 
   const isLoginActive = location.pathname === '/login';
 
@@ -130,7 +133,8 @@ export default function Register({ onLoginSuccess }) {
         if (response.data && response.data.access_token) {
           setSuccess('ההרשמה והאימות בוצעו בהצלחה!');
           localStorage.setItem('token', response.data.access_token);
-          if (onLoginSuccess) await onLoginSuccess();
+          dispatch(setAuthCredentials({ token: response.data.access_token }));
+          dispatch(fetchCurrentUser());
           setTimeout(() => navigate('/'), 1500);
         }
       } catch (err) {

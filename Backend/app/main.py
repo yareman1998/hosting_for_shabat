@@ -7,6 +7,7 @@ from app.features.posts.router import router as posts_router
 from app.features.bookings.router import router as bookings_router
 from app.features.admin.router import router as admin_router
 from app.features.chat.router import router as chat_router
+from app.features.availability.router import router as availability_router
 
 app = FastAPI(
     title="Hosting for Shabbat API",
@@ -29,6 +30,7 @@ app.include_router(posts_router, prefix="/api")
 app.include_router(bookings_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
+app.include_router(availability_router, prefix="/api")
 
 
 @app.get("/")

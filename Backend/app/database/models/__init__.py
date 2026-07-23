@@ -5,6 +5,11 @@ from app.database.models.listing import HostListing
 from app.database.models.post import GuestPost, PostStatus
 from app.database.models.match import Match, MatchStatus
 from app.database.models.message import Message
+from app.database.models.availability import (
+    HostAvailabilityRule,
+    HostAvailabilityOverride,
+    OverrideStatus,
+)
 
 __all__ = [
     "Base",
@@ -19,4 +24,8 @@ __all__ = [
     "Match",
     "MatchStatus",
     "Message",
+    "HostAvailabilityRule",
+    "HostAvailabilityOverride",
+    "OverrideStatus",
 ]
+

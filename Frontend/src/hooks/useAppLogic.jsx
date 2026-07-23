@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useEffect, useMemo } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
-import { authApi } from '../api/api'
+import { useDispatch, useSelector } from 'react-redux'
+import { fetchCurrentUser, logout } from '../store/authSlice'
 import Layout from '../components/Common/Layout/Layout'
-import HomePage from '../pages/Home/Home'
-import HomeGuest from '../pages/Home/HomeGuest/HomeGuest' // <-- Added HomeGuest import
+import HomeGuest from '../pages/Home/HomeGuest/HomeGuest'
+import HomeHost from '../pages/Home/HomeHost/HomeHost'
 import FindHost from '../pages/FindHost/FindHost'
 import HostDetails from '../pages/HostDetails/HostDetails'
 import MyRequests from '../pages/MyRequests/MyRequests'
@@ -26,73 +27,48 @@ import ProtectedRoute from '../components/Common/ProtectedRoute'
 import Loading from '../components/Common/Loading/Loading'
 
 export function useAppLogic() {
-  const [userRole, setUserRole] = useState(null);
-  const [loadingAuth, setLoadingAuth] = useState(true);
-
-  // Fetch current user from server using JWT token
-  const refreshUser = useCallback(async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setUserRole(null);
-      setLoadingAuth(false);
-      return;
-    }
-    setLoadingAuth(true);
-    try {
-      const response = await authApi.getMe();
-      const userData = response.data;
-      setUserRole(userData.user_type);
-    } catch (error) {
-      console.error("Failed to authenticate user token:", error);
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setUserRole(null);
-    } finally {
-      setLoadingAuth(false);
-    }
-  }, []);
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth.user);
+  const loadingAuth = useSelector((state) => state.auth.loading);
+  const userRole = user?.user_type || null;
 
   useEffect(() => {
-    refreshUser();
-  }, [refreshUser]);
+    dispatch(fetchCurrentUser());
+  }, [dispatch]);
 
   useEffect(() => {
     const handleLogout = () => {
-      setUserRole(null);
-      setLoadingAuth(false);
+      dispatch(logout());
     };
     window.addEventListener('auth-logout', handleLogout);
     return () => {
       window.removeEventListener('auth-logout', handleLogout);
     };
-  }, []);
-
-  // Updates hook state immediately when a user logs in successfully
-  const handleLoginSuccess = async () => {
-    await refreshUser();
-  };
+  }, [dispatch]);
 
   // Memoize router configuration to prevent unnecessary recreations unless userRole or loadingAuth changes
   const router = useMemo(() => {
     return createBrowserRouter([
       {
         path: '/',
-        element: <Layout userRole={userRole} loading={loadingAuth} />,
+        element: <Layout />,
         errorElement: <NotFound />,
         children: [
           {
             index: true,
             // <-- Updated routing logic for the homepage
-            element: userRole === 'admin' 
-              ? <Navigate to="/admin" replace /> 
-              : userRole === 'guest' 
-                ? <HomeGuest /> 
-                : <HomePage />
+            element: userRole === 'admin'
+              ? <Navigate to="/admin" replace />
+              : userRole === 'guest'
+                ? <HomeGuest />
+                : userRole === 'host'
+                  ? <HomeHost />
+                  : <>NotFound</>
           },
           {
             path: 'profile',
             element: (
-              <ProtectedRoute userRole={userRole} loading={loadingAuth}>
+              <ProtectedRoute>
                 <ProfilePage />
               </ProtectedRoute>
             )
@@ -101,7 +77,7 @@ export function useAppLogic() {
           {
             path: 'find-host',
             element: (
-              <ProtectedRoute allowedRoles={['guest']} userRole={userRole} loading={loadingAuth}>
+              <ProtectedRoute allowedRoles={['guest']}>
                 <FindHost />
               </ProtectedRoute>
             )
@@ -109,7 +85,7 @@ export function useAppLogic() {
           {
             path: 'find-host/:id',
             element: (
-              <ProtectedRoute allowedRoles={['guest']} userRole={userRole} loading={loadingAuth}>
+              <ProtectedRoute allowedRoles={['guest']}>
                 <HostDetails />
               </ProtectedRoute>
             )
@@ -117,7 +93,7 @@ export function useAppLogic() {
           {
             path: 'host/:id',
             element: (
-              <ProtectedRoute allowedRoles={['guest']} userRole={userRole} loading={loadingAuth}>
+              <ProtectedRoute allowedRoles={['guest']}>
                 <HostDetails />
               </ProtectedRoute>
             )
@@ -125,7 +101,7 @@ export function useAppLogic() {
           {
             path: 'my-requests',
             element: (
-              <ProtectedRoute allowedRoles={['guest']} userRole={userRole} loading={loadingAuth}>
+              <ProtectedRoute allowedRoles={['guest']}>
                 <MyRequests />
               </ProtectedRoute>
             )
@@ -134,7 +110,7 @@ export function useAppLogic() {
           {
             path: 'requests-board',
             element: (
-              <ProtectedRoute allowedRoles={['host']} userRole={userRole} loading={loadingAuth}>
+              <ProtectedRoute allowedRoles={['host']}>
                 <RequestsBoard />
               </ProtectedRoute>
             )
@@ -143,7 +119,7 @@ export function useAppLogic() {
           {
             path: 'admin',
             element: (
-              <ProtectedRoute allowedRoles={['admin']} userRole={userRole} loading={loadingAuth}>
+              <ProtectedRoute allowedRoles={['admin']}>
                 <AdminLayout />
               </ProtectedRoute>
             ),
@@ -163,7 +139,7 @@ export function useAppLogic() {
         ) : userRole ? (
           <Navigate to="/" replace />
         ) : (
-          <Login onLoginSuccess={handleLoginSuccess} />
+          <Login />
         )
       },
       {
@@ -173,7 +149,7 @@ export function useAppLogic() {
         ) : userRole ? (
           <Navigate to="/" replace />
         ) : (
-          <Register onLoginSuccess={handleLoginSuccess} />
+          <Register />
         )
       },
       {

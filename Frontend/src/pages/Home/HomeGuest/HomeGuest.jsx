@@ -1,6 +1,7 @@
-import React from 'react';
-import {  
-  FileText, 
+import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { 
+  Newspaper,
   CheckCircle2, 
   Sparkles, 
   Send, 
@@ -11,8 +12,20 @@ import {
   Bot
 } from 'lucide-react';
 import "./HomeGuest.css";
+import CreatePostModal from '../../../components/RequestsList/CreatePostModal';
+import { fetchPosts } from '../../../store/requestsSlice';
 
-export default function GuestHome() {
+export default function HomeGuest() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const dispatch = useDispatch();
+
+  // Generate the live date in Hebrew format (e.g., "יום חמישי, 23 ביולי 2026")
+  const formattedDate = new Intl.DateTimeFormat('he-IL', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(new Date());
   const featuredHosts = [
     {
       id: 1,
@@ -75,17 +88,24 @@ export default function GuestHome() {
       <section className="gh-hero">
         <div className="gh-hero-content">
           <span className="gh-hero-subtitle">שבת הקרובה</span>
-          <h1 className="gh-hero-title">שישי, 18 ביולי 2025</h1>
+          {/* Injected the live dynamic date here */}
+          <h1 className="gh-hero-title">{formattedDate}</h1>
           <p className="gh-hero-info">כניסת שבת בשעה 19:45 · 8 משפחות מחכות לכם</p>
           
           <div className="gh-hero-actions">
-            <button className="gh-btn-secondary">
-              <FileText size={18} />
+            <button className="gh-btn-secondary" onClick={() => setIsModalOpen((prev) => !prev)}>
+              <Newspaper size={16} />
               פרסם בקשה
             </button>
           </div>
         </div>
       </section>
+
+      <CreatePostModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={() => dispatch(fetchPosts())}
+      />
 
       {/* 2. SUCCESS ALERT */}
       <div className="gh-alert-success">

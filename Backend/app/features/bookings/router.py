@@ -1,7 +1,8 @@
 import uuid
 import urllib.parse
+from datetime import datetime, timezone, timedelta
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.database.session import get_db
 from app.database.models.user import User, UserType
@@ -10,11 +11,34 @@ from app.database.models.post import GuestPost, PostStatus
 from app.features.auth.services import get_current_user
 from app.features.bookings.schemas import BookingRequestCreate, BookingResponse, MatchStatusUpdate
 from app.agent.services import AgentService
+from app.features.posts.router import post_manager
 
 router = APIRouter(prefix="", tags=["Bookings & Matches"])
 
+@router.get("/bookings/count")
+def get_bookings_count(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.user_type != UserType.GUEST or not current_user.guest_profile:
+        return {"posts_count": 0, "bookings_count": 0, "total_count": 0}
+        
+    posts_count = db.query(GuestPost).filter(
+        GuestPost.guest_profile_id == current_user.guest_profile.id
+    ).count()
+    
+    bookings_count = db.query(Match).join(GuestPost).filter(
+        GuestPost.guest_profile_id == current_user.guest_profile.id
+    ).count()
+    
+    return {
+        "posts_count": posts_count,
+        "bookings_count": bookings_count,
+        "total_count": posts_count + bookings_count
+    }
+
 @router.post("/bookings/request", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
-def request_booking(
+async def request_booking(
     req: BookingRequestCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -25,31 +49,52 @@ def request_booking(
             detail="Only guests can request bookings"
         )
         
-    post = db.query(GuestPost).filter(
-        GuestPost.id == req.guest_post_id,
-        GuestPost.guest_profile_id == current_user.guest_profile.id
-    ).first()
-    if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Guest post not found or not owned by you"
-        )
+    guest_post_id = req.guest_post_id
+    if not guest_post_id:
+        # Find latest open guest post or create a default one
+        post = db.query(GuestPost).filter(
+            GuestPost.guest_profile_id == current_user.guest_profile.id,
+            GuestPost.status == PostStatus.OPEN
+        ).order_by(GuestPost.created_at.desc()).first()
+        
+        if not post:
+            post = GuestPost(
+                guest_profile_id=current_user.guest_profile.id,
+                requested_date=datetime.now(timezone.utc) + timedelta(days=2), # Default to upcoming date
+                description="בקשת אירוח ישירה למארח",
+                guests_count=1,
+                status=PostStatus.OPEN
+            )
+            db.add(post)
+            db.flush()
+        guest_post_id = post.id
+    else:
+        post = db.query(GuestPost).filter(
+            GuestPost.id == guest_post_id,
+            GuestPost.guest_profile_id == current_user.guest_profile.id
+        ).first()
+        if not post:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Guest post not found or not owned by you"
+            )
         
     existing = db.query(Match).filter(
-        Match.guest_post_id == req.guest_post_id,
+        Match.guest_post_id == guest_post_id,
         Match.host_profile_id == req.host_profile_id
     ).first()
     if existing:
         return existing
         
     new_match = Match(
-        guest_post_id=req.guest_post_id,
+        guest_post_id=guest_post_id,
         host_profile_id=req.host_profile_id,
         status=MatchStatus.PENDING
     )
     db.add(new_match)
     db.commit()
     db.refresh(new_match)
+    await post_manager.broadcast_updates()
     return new_match
 
 @router.get("/bookings/incoming", response_model=List[BookingResponse])
@@ -68,7 +113,7 @@ def get_incoming_bookings(
     ).all()
 
 @router.patch("/bookings/{match_id}/respond", response_model=BookingResponse)
-def respond_booking(
+async def respond_booking(
     match_id: uuid.UUID,
     data: MatchStatusUpdate,
     current_user: User = Depends(get_current_user),
@@ -110,6 +155,7 @@ def respond_booking(
     match.status = data.status
     db.commit()
     db.refresh(match)
+    await post_manager.broadcast_updates()
     return match
 
 @router.get("/matches/{match_id}/details")

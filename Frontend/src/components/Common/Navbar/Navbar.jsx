@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
 import {
   House,
   Search,
@@ -9,28 +10,35 @@ import {
   Users,
   Building,
   Inbox,
-  User,
-  Bell
+  User
 } from 'lucide-react';
-import { authApi } from '../../../api/api';
-import { Logo } from '../Icons';
+import { logout } from '../../../store/authSlice';
+import { Logo, LogOutIcon } from '../Icons';
+import { getUserInitials } from '../../../utils/user';
+import NotificationBell from "../NotificationBell/NotificationBell";
 import './Navbar.css';
 
-export default function Navbar({ userRole }) {
+export default function Navbar() {
   const navigate = useNavigate();
-  
-  // States
+  const dispatch = useDispatch();
+
+  // States & Selectors
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
-  const [userName, setUserName] = useState('');
   const dropdownRef = useRef(null);
+
+  const user = useSelector((state) => state.auth.user);
+  const userRole = user?.user_type || null;
+  const userName = user?.full_name || '';
+
+  const badgeCount = useSelector((state) => state.requests.badgeCount);
 
   const linksConfig = [
     { path: '/', label: 'בית', roles: ['guest', 'host'], icon: <House className="nav-icon" /> },
     { path: '/find-host', label: 'מצא מארח', roles: ['guest'], icon: <Search className="nav-icon" /> },
     { path: '/my-requests', label: 'הבקשות שלי', roles: ['guest'], hasBadge: true, icon: <FileText className="nav-icon" /> },
-    { path: '/requests-board', label: 'לוח בקשות', roles: ['host'], icon: <ClipboardList className="nav-icon" /> },
-    { path: '/admin', end: true, label: 'לוח בקרה', roles: ['admin'], icon: <LayoutDashboard className="nav-icon" /> },
+    { path: '/requests-board', label: 'לוח בקשות', roles: ['host'], hasBadge: true, icon: <ClipboardList className="nav-icon" /> },
+    { path: '/admin', end: true, label: 'לוח בקרה', roles: ['admin'], hasBadge: true, icon: <LayoutDashboard className="nav-icon" /> },
     { path: '/admin/users', label: 'ניהול משתמשים', roles: ['admin'], icon: <Users className="nav-icon" /> },
     { path: '/admin/listings', label: 'דירות ומארחים', roles: ['admin'], icon: <Building className="nav-icon" /> },
     { path: '/admin/bookings', label: 'בקשות', roles: ['admin'], icon: <Inbox className="nav-icon" /> },
@@ -49,27 +57,11 @@ export default function Navbar({ userRole }) {
         >
           {link.icon}
           <span>{link.label}</span>
-          {link.hasBadge && <span className="requests-badge">1</span>}
+          {link.hasBadge && badgeCount > 0 && <span className="requests-badge">{badgeCount}</span>}
         </NavLink>
       </li>
     ));
   }
-
-  useEffect(() => {
-    const fetchUserForNav = async () => {
-      if (!localStorage.getItem('token')) return;
-
-      try {
-        const response = await authApi.getMe();
-        setUserName(response.data.full_name);
-        localStorage.setItem('user', JSON.stringify(response.data));
-      } catch (error) {
-        console.error("Navbar failed to fetch user:", error);
-      }
-    };
-
-    fetchUserForNav();
-  }, []);
 
   useEffect(() => {
     if (isDark) {
@@ -93,22 +85,11 @@ export default function Navbar({ userRole }) {
 
   const handleLogout = () => {
     setIsDropdownOpen(false);
-    authApi.logout(); 
+    dispatch(logout());
     navigate('/login');
   };
 
-  const getInitials = () => {
-    if (userName) return userName.trim().charAt(0);
-    try {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const userObj = JSON.parse(userStr);
-        if (userObj?.full_name) return userObj.full_name.trim().charAt(0);
-        if (userObj?.email) return userObj.email.trim().charAt(0).toUpperCase();
-      }
-    } catch (e) {}
-    return 'מ';
-  };
+  const getInitials = () => getUserInitials(user);
 
   const firstName = userName ? userName.split(' ')[0] : '';
 
@@ -129,14 +110,10 @@ export default function Navbar({ userRole }) {
       </ul>
 
       <div className="navbar-left">
-        <div className="notification-bell">
-          <Bell className="nav-icon" />
-          <span className="bell-badge"></span>
-        </div>
-        
+        <NotificationBell />
         <div className="profile-dropdown-container" ref={dropdownRef}>
-          <div 
-            className="profile-circle" 
+          <div
+            className="profile-circle"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           >
             {getInitials()}
@@ -148,7 +125,7 @@ export default function Navbar({ userRole }) {
                 <div className="dropdown-large-initial">{getInitials()}</div>
                 <span>שלום {firstName}!</span>
               </div>
-              
+
               <div className="dropdown-divider"></div>
 
               <button className="dropdown-item" onClick={() => { setIsDropdownOpen(false); navigate('/profile'); }}>
@@ -165,11 +142,7 @@ export default function Navbar({ userRole }) {
               <div className="dropdown-divider"></div>
 
               <button className="dropdown-item logout-item" onClick={handleLogout}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="dropdown-icon">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                  <polyline points="16 17 21 12 16 7"></polyline>
-                  <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>
+                <LogOutIcon className="dropdown-icon" />
                 התנתקות
               </button>
             </div>

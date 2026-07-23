@@ -37,6 +37,40 @@ def get_bookings_count(
         "total_count": posts_count + bookings_count
     }
 
+@router.get("/bookings/guest-status/{host_id}")
+def check_guest_booking_status(
+    host_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.user_type != UserType.GUEST or not current_user.guest_profile:
+        return {"can_request": True, "reason": None}
+
+    # 1. Check if guest is matched anywhere for upcoming weekend/active post
+    matched_anywhere = db.query(Match).join(GuestPost).filter(
+        GuestPost.guest_profile_id == current_user.guest_profile.id,
+        Match.status == MatchStatus.MATCHED
+    ).first()
+    if matched_anywhere:
+        return {
+            "can_request": False,
+            "reason": "כבר נמצא לכם מקום אירוח לשבת! לא ניתן לבקש אירוחים נוספים."
+        }
+
+    # 2. Check if guest has pending match/request specifically with THIS host
+    pending_this_host = db.query(Match).join(GuestPost).filter(
+        GuestPost.guest_profile_id == current_user.guest_profile.id,
+        Match.host_profile_id == host_id,
+        Match.status == MatchStatus.PENDING
+    ).first()
+    if pending_this_host:
+        return {
+            "can_request": False,
+            "reason": "כבר שלחת בקשת אירוח למארח זה. יש להמתין לתשובתו."
+        }
+
+    return {"can_request": True, "reason": None}
+
 def get_upcoming_friday_datetime() -> datetime:
     now_utc = datetime.now(timezone.utc)
     today = now_utc.date()
@@ -60,6 +94,30 @@ async def request_booking(
     target_date = req.requested_date or req.start_date or get_upcoming_friday_datetime()
     target_description = req.description or "בקשת אירוח ישירה למארח"
     target_guests = req.guests_count or 1
+
+    # Check if guest is matched anywhere
+    matched_anywhere = db.query(Match).join(GuestPost).filter(
+        GuestPost.guest_profile_id == current_user.guest_profile.id,
+        Match.status == MatchStatus.MATCHED
+    ).first()
+    if matched_anywhere:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="כבר נמצא לכם מקום אירוח לשבת! לא ניתן לבקש אירוחים נוספים."
+        )
+
+    # Check if host is already matched or has a pending request from/with this host
+    existing_post_match = db.query(Match).join(GuestPost).filter(
+        GuestPost.guest_profile_id == current_user.guest_profile.id,
+        Match.host_profile_id == req.host_profile_id,
+        Match.status.in_([MatchStatus.PENDING, MatchStatus.MATCHED])
+    ).first()
+    
+    if existing_post_match:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="כבר שלחת בקשת אירוח למארח זה. יש להמתין לתשובתו."
+        )
 
     if not guest_post_id:
         post = GuestPost(

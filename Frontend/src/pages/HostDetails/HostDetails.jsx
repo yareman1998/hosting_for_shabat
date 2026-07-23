@@ -43,14 +43,35 @@ export default function HostDetails() {
 
   const [loading, setLoading] = useState(!host);
   const [imageError, setImageError] = useState(false);
-  const [requestStatus, setRequestStatus] = useState(null); // 'submitting' | 'success' | null
+  const [requestStatus, setRequestStatus] = useState(null); // 'submitting' | 'success' | 'error' | null
   const [toastMessage, setToastMessage] = useState('');
+  const [guestBookingStatus, setGuestBookingStatus] = useState({ can_request: true, reason: null });
 
-  // Fetch host from DB if not available in state/cache
+  // Fetch host from DB if not available in state/cache & check guest booking status
   useEffect(() => {
+    let isMounted = true;
+
+    async function checkStatus() {
+      if (host?.id) {
+        try {
+          const res = await bookingsApi.checkGuestStatus(host.id);
+          if (isMounted && res.data) {
+            setGuestBookingStatus(res.data);
+            if (!res.data.can_request && res.data.reason) {
+              setRequestStatus('error');
+              setToastMessage(res.data.reason);
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to check guest booking status:', e);
+        }
+      }
+    }
+
+    checkStatus();
+
     if (host) return;
 
-    let isMounted = true;
     async function fetchHostDetails() {
       setLoading(true);
       try {
@@ -89,6 +110,19 @@ export default function HostDetails() {
             shabbat_date: found.shabbat_date || found.requested_date || found.available_date || null
           };
           setHost(mapped);
+          
+          try {
+            const res = await bookingsApi.checkGuestStatus(found.id);
+            if (isMounted && res.data) {
+              setGuestBookingStatus(res.data);
+              if (!res.data.can_request && res.data.reason) {
+                setRequestStatus('error');
+                setToastMessage(res.data.reason);
+              }
+            }
+          } catch (e) {
+            console.warn('Failed to check guest booking status:', e);
+          }
         }
       } catch (err) {
         console.error('Error fetching host details:', err);
@@ -131,13 +165,16 @@ export default function HostDetails() {
           description: notes
         });
         dispatch(fetchPosts());
+        setRequestStatus('success');
+        setToastMessage(`בקשת אירוח נשלחה בהצלחה אל ${hostName}!`);
       }
     } catch (err) {
       console.warn('Booking request notice:', err);
+      const errorMsg = err.response?.data?.detail || 'כבר שלחת בקשת אירוח למארח זה או שקיימת בקשה פעילה.';
+      setRequestStatus('error');
+      setToastMessage(errorMsg);
     } finally {
       setIsModalOpen(false);
-      setRequestStatus('success');
-      setToastMessage(`בקשת אירוח נשלחה בהצלחה אל ${hostName}!`);
     }
   };
 
@@ -232,6 +269,7 @@ export default function HostDetails() {
               requestStatus={requestStatus}
               availableSpots={availableSpots}
               toastMessage={toastMessage}
+              guestBookingStatus={guestBookingStatus}
             />
           </div>
 

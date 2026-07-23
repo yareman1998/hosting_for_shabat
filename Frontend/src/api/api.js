@@ -77,6 +77,7 @@ export const bookingsApi = {
   respondToBooking: (matchId, status) => api.patch(`/bookings/${matchId}/respond`, { status }), // status: "accepted" or "rejected"
   getMatchDetails: (matchId) => api.get(`/matches/${matchId}/details`),
   getGuestRequestsCount: () => api.get('/bookings/count'),
+  checkGuestStatus: (hostId) => api.get(`/bookings/guest-status/${hostId}`),
 };
 
 // Admin Management & Moderation API

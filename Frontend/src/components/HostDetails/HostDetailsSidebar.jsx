@@ -10,8 +10,12 @@ export default function HostDetailsSidebar({
   handleSendBookingRequest,
   requestStatus,
   availableSpots,
-  toastMessage
+  toastMessage,
+  guestBookingStatus
 }) {
+  const isBlocked = guestBookingStatus?.can_request === false;
+  const disabledReason = guestBookingStatus?.reason || 'לא ניתן לשלוח בקשת אירוח נוספת';
+
   return (
     <div className="sidebar-booking-card">
       {/* Header: Match Score Right, Rating Left */}
@@ -51,11 +55,14 @@ export default function HostDetailsSidebar({
       <button
         type="button"
         onClick={handleSendBookingRequest}
-        disabled={requestStatus === 'submitting' || requestStatus === 'success'}
+        disabled={requestStatus === 'submitting' || requestStatus === 'success' || isBlocked}
+        title={isBlocked ? disabledReason : ''}
         className="sidebar-booking-btn"
       >
         {requestStatus === 'submitting' ? (
           'שולח בקשה...'
+        ) : isBlocked ? (
+          'חוסר אפשרות לבקש אירוח'
         ) : requestStatus === 'success' ? (
           <>
             <CheckCircle2 className="success-icon" />
@@ -78,7 +85,7 @@ export default function HostDetailsSidebar({
       )}
 
       {toastMessage && (
-        <div className="toast-success-box">
+        <div className={requestStatus === 'error' ? "toast-error-box" : "toast-success-box"}>
           {toastMessage}
         </div>
       )}

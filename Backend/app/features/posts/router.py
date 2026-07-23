@@ -13,6 +13,8 @@ from app.database.models.post import GuestPost, PostStatus
 from app.database.models.match import Match, MatchStatus
 from app.features.auth.services import get_current_user
 from app.features.posts.schemas import GuestPostCreate, GuestPostUpdate, GuestPostResponse
+from app.features.notifications.router import manager as notification_manager
+
 
 router = APIRouter(prefix="/posts", tags=["Guest Posts"])
 
@@ -225,36 +227,41 @@ async def claim_post(
             detail="Guest post not found"
         )
         
-    if post.status != PostStatus.OPEN:
+    if post.status == PostStatus.MATCHED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="הבקשה כבר בטיפול או שאושרה על ידי מארח אחר"
+            detail="Guest post is already claimed"
         )
         
-    post.status = PostStatus.PENDING
+    post.status = PostStatus.MATCHED
     post.claimed_by_host_id = current_user.host_profile.id
-    post.is_direct_request = False
     
-    existing_match = db.query(Match).filter(
-        Match.guest_post_id == post.id,
-        Match.host_profile_id == current_user.host_profile.id
-    ).first()
-
-    if existing_match:
-        existing_match.status = MatchStatus.PENDING
-        match = existing_match
-    else:
-        match = Match(
-            guest_post_id=post.id,
-            host_profile_id=current_user.host_profile.id,
-            status=MatchStatus.PENDING
-        )
-        db.add(match)
-
+    match = Match(
+        guest_post_id=post.id,
+        host_profile_id=current_user.host_profile.id,
+        status=MatchStatus.MATCHED
+    )
+    db.add(match)
     db.commit()
+    db.refresh(post) # Refresh so we can access relations like guest_profile
     
-    # Broadcast live updates to active WebSockets directly
+    # 1. Broadcast live updates to active posts WebSockets (updates the board)
     await post_manager.broadcast_updates()
+    
+    # 2. PUSH LIVE NOTIFICATION to the guest's notification bell!
+    if post.guest_profile and post.guest_profile.user_id:
+        guest_user_id_str = str(post.guest_profile.user_id)
+        
+        notification_payload = {
+            "id": str(uuid.uuid4()),
+            "type": "success",
+            "title": "בקשת האירוח אושרה!",
+            "message": "משפחת המארחים אישרה את בקשת האירוח שלך לשבת הקרובה.",
+            "time": "עכשיו",
+            "isRead": False
+        }
+        
+        await notification_manager.send_personal_notification(notification_payload, guest_user_id_str)
     
     return {
         "message": "Guest post claimed successfully",

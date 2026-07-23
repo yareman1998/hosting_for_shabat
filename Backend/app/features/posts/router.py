@@ -3,7 +3,7 @@ import jwt
 import asyncio
 from typing import List, Dict
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, Query
+from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.database.session import get_db, SessionLocal
@@ -37,11 +37,12 @@ class PostConnectionManager:
     async def broadcast_updates(self):
         """Recalculate and send updates to all active clients according to their role."""
         with SessionLocal() as db:
-            # Pre-fetch future open posts for hosts
+            # Pre-fetch open posts for hosts (including posts requested today or future)
             now = datetime.now(timezone.utc)
+            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
             open_posts = db.query(GuestPost).filter(
                 GuestPost.status == PostStatus.OPEN,
-                GuestPost.requested_date >= now
+                GuestPost.requested_date >= today_start
             ).all()
             open_posts.sort(key=lambda p: (not p.is_urgent, p.requested_date))
             open_posts_data = [GuestPostResponse.model_validate(p).model_dump(mode="json") for p in open_posts]
@@ -49,8 +50,23 @@ class PostConnectionManager:
             for conn in list(self.active_connections):
                 try:
                     if conn["user_type"] == UserType.HOST:
-                        # Hosts get open future posts
-                        await conn["websocket"].send_json(open_posts_data)
+                        host_user = db.query(User).filter(User.id == conn["user_id"]).first()
+                        host_profile_id = host_user.host_profile.id if (host_user and host_user.host_profile) else None
+                        
+                        if host_profile_id:
+                            posts = db.query(GuestPost).filter(
+                                GuestPost.requested_date >= today_start,
+                                (GuestPost.status == PostStatus.OPEN) | 
+                                ((GuestPost.status == PostStatus.MATCHED) & (GuestPost.claimed_by_host_id == host_profile_id))
+                            ).all()
+                        else:
+                            posts = db.query(GuestPost).filter(
+                                GuestPost.status == PostStatus.OPEN,
+                                GuestPost.requested_date >= today_start
+                            ).all()
+                        posts.sort(key=lambda p: (not p.is_urgent, p.requested_date))
+                        posts_data = [GuestPostResponse.model_validate(p).model_dump(mode="json") for p in posts]
+                        await conn["websocket"].send_json(posts_data)
                     elif conn["user_type"] == UserType.GUEST:
                         # Guests only get their own posts
                         guest_posts = db.query(GuestPost).join(GuestPost.guest_profile).filter(
@@ -64,7 +80,7 @@ class PostConnectionManager:
 post_manager = PostConnectionManager()
 
 @router.post("", response_model=GuestPostResponse, status_code=status.HTTP_201_CREATED)
-def create_post(
+async def create_post(
     post_in: GuestPostCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -75,19 +91,24 @@ def create_post(
             detail="Only guests with profiles can create posts"
         )
         
+    req_date = post_in.start_date or post_in.requested_date
     new_post = GuestPost(
         guest_profile_id=current_user.guest_profile.id,
-        requested_date=post_in.requested_date,
+        requested_date=req_date,
+        start_date=req_date,
+        end_date=post_in.end_date,
+        nights_count=post_in.nights_count,
         description=post_in.description,
         guests_count=post_in.guests_count,
+        is_anonymous=post_in.is_anonymous if post_in.is_anonymous is not None else True,
         status=PostStatus.OPEN
     )
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
     
-    # Broadcast live updates to active WebSockets
-    asyncio.create_task(post_manager.broadcast_updates())
+    # Broadcast live updates to active WebSockets directly
+    await post_manager.broadcast_updates()
     
     return new_post
 
@@ -97,11 +118,21 @@ def get_posts(
     db: Session = Depends(get_db)
 ):
     if current_user.user_type == UserType.HOST:
-        now = datetime.now(timezone.utc)
-        posts = db.query(GuestPost).filter(
-            GuestPost.status == PostStatus.OPEN,
-            GuestPost.requested_date >= now
-        ).all()
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        host_profile_id = current_user.host_profile.id if current_user.host_profile else None
+        
+        if host_profile_id:
+            posts = db.query(GuestPost).filter(
+                GuestPost.requested_date >= today_start,
+                (GuestPost.status == PostStatus.OPEN) | 
+                ((GuestPost.status == PostStatus.MATCHED) & (GuestPost.claimed_by_host_id == host_profile_id))
+            ).all()
+        else:
+            posts = db.query(GuestPost).filter(
+                GuestPost.status == PostStatus.OPEN,
+                GuestPost.requested_date >= today_start
+            ).all()
+            
         posts.sort(key=lambda p: (not p.is_urgent, p.requested_date))
         return posts
     elif current_user.user_type == UserType.GUEST:
@@ -117,7 +148,7 @@ def get_posts(
         return posts
 
 @router.post("/{post_id}/claim")
-def claim_post(
+async def claim_post(
     post_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -153,8 +184,8 @@ def claim_post(
     db.add(match)
     db.commit()
     
-    # Broadcast live updates to active WebSockets
-    asyncio.create_task(post_manager.broadcast_updates())
+    # Broadcast live updates to active WebSockets directly
+    await post_manager.broadcast_updates()
     
     return {
         "message": "Guest post claimed successfully",
@@ -197,11 +228,20 @@ async def websocket_posts_endpoint(
         db = SessionLocal()
         try:
             if user_type == UserType.HOST:
-                now = datetime.now(timezone.utc)
-                posts = db.query(GuestPost).filter(
-                    GuestPost.status == PostStatus.OPEN,
-                    GuestPost.requested_date >= now
-                ).all()
+                today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+                current_user = db.query(User).filter(User.id == user_id).first()
+                host_profile_id = current_user.host_profile.id if (current_user and current_user.host_profile) else None
+                if host_profile_id:
+                    posts = db.query(GuestPost).filter(
+                        GuestPost.requested_date >= today_start,
+                        (GuestPost.status == PostStatus.OPEN) | 
+                        ((GuestPost.status == PostStatus.MATCHED) & (GuestPost.claimed_by_host_id == host_profile_id))
+                    ).all()
+                else:
+                    posts = db.query(GuestPost).filter(
+                        GuestPost.status == PostStatus.OPEN,
+                        GuestPost.requested_date >= today_start
+                    ).all()
                 posts.sort(key=lambda p: (not p.is_urgent, p.requested_date))
                 posts_data = [GuestPostResponse.model_validate(p).model_dump(mode="json") for p in posts]
                 await websocket.send_json(posts_data)
@@ -213,6 +253,7 @@ async def websocket_posts_endpoint(
                 await websocket.send_json(posts_data)
         finally:
             db.close()
+
 
         while True:
             # Maintain the connection open

@@ -89,4 +89,30 @@ export const adminApi = {
   deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
 };
 
+// Host Availability API
+export const availabilityApi = {
+  // Fetch full state (rule + overrides) on dashboard load
+  getDashboard: () => api.get('/availability'),
+
+  // Upsert recurring rules
+  saveRules: (rulesPayload) => api.put('/availability/rules', rulesPayload),
+
+  // Upsert a single date override (open/closed)
+  setOverride: (overrideDate, status, note = null) =>
+    api.post('/availability/overrides', { override_date: overrideDate, status, note }),
+
+  // Remove a single date override (revert to rule)
+  deleteOverride: (overrideDate) => api.delete(`/availability/overrides/${overrideDate}`),
+
+  // Bulk-sync the full overrides map to the backend
+  // overridesMap: { 'YYYY-MM-DD': 'open' | 'closed' }
+  syncOverrides: (overridesMap) => {
+    const overrides = Object.entries(overridesMap).map(([override_date, status]) => ({
+      override_date,
+      status,
+    }));
+    return api.put('/availability/overrides', { overrides });
+  },
+};
+
 export default api;

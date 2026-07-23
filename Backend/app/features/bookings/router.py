@@ -2,7 +2,7 @@ import uuid
 import urllib.parse
 from datetime import datetime, timezone, timedelta
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.database.session import get_db
 from app.database.models.user import User, UserType
@@ -11,6 +11,7 @@ from app.database.models.post import GuestPost, PostStatus
 from app.features.auth.services import get_current_user
 from app.features.bookings.schemas import BookingRequestCreate, BookingResponse, MatchStatusUpdate
 from app.agent.services import AgentService
+from app.features.posts.router import post_manager
 
 router = APIRouter(prefix="", tags=["Bookings & Matches"])
 
@@ -37,7 +38,7 @@ def get_bookings_count(
     }
 
 @router.post("/bookings/request", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
-def request_booking(
+async def request_booking(
     req: BookingRequestCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -93,6 +94,7 @@ def request_booking(
     db.add(new_match)
     db.commit()
     db.refresh(new_match)
+    await post_manager.broadcast_updates()
     return new_match
 
 @router.get("/bookings/incoming", response_model=List[BookingResponse])
@@ -111,7 +113,7 @@ def get_incoming_bookings(
     ).all()
 
 @router.patch("/bookings/{match_id}/respond", response_model=BookingResponse)
-def respond_booking(
+async def respond_booking(
     match_id: uuid.UUID,
     data: MatchStatusUpdate,
     current_user: User = Depends(get_current_user),
@@ -153,6 +155,7 @@ def respond_booking(
     match.status = data.status
     db.commit()
     db.refresh(match)
+    await post_manager.broadcast_updates()
     return match
 
 @router.get("/matches/{match_id}/details")

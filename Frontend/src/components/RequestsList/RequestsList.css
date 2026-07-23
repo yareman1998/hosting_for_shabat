@@ -9,6 +9,41 @@
   direction: rtl;
 }
 
+.requests-filter-nav {
+  display: flex;
+  gap: 4px;
+  background-color: var(--bg-secondary);
+  padding: 4px;
+  border-radius: 12px;
+  width: fit-content;
+  border: 1px solid var(--border);
+  align-self: flex-start;
+}
+
+.requests-filter-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--sans);
+}
+
+.requests-filter-btn:hover {
+  color: var(--text-h);
+}
+
+.requests-filter-btn.active {
+  background-color: var(--bg);
+  color: var(--text-h);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
 .request-card {
   background-color: var(--bg);
   border: 1px solid var(--border);
@@ -167,6 +202,21 @@ body.dark-theme .card-tag.tag-kashrut {
   transform: translateY(-1px);
 }
 
+.action-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.spin-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .action-button:active {
   transform: scale(0.97);
 }
@@ -188,3 +238,55 @@ body.dark-theme .card-tag.tag-kashrut {
   padding: 40px 20px;
   color: var(--text-muted);
 }
+
+/* ── Urgent Requests Styling (Within 24 Hours & Unapproved) ── */
+.request-card.urgent-card {
+  border: 2px solid #ef4444;
+  background: linear-gradient(135deg, rgba(254, 242, 242, 0.95), var(--bg));
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.18);
+  position: relative;
+  animation: urgentPulse 2.5s infinite ease-in-out;
+}
+
+body.dark-theme .request-card.urgent-card {
+  background: linear-gradient(135deg, rgba(69, 10, 10, 0.4), var(--bg));
+  border-color: #f87171;
+  box-shadow: 0 4px 15px rgba(248, 113, 113, 0.2);
+}
+
+@keyframes urgentPulse {
+  0%, 100% {
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.18);
+  }
+  50% {
+    box-shadow: 0 6px 22px rgba(239, 68, 68, 0.35);
+  }
+}
+
+.status-badge.urgent-badge {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+}
+
+body.dark-theme .status-badge.urgent-badge {
+  background-color: rgba(220, 38, 38, 0.25);
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.action-button.urgent-claim-btn {
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  font-weight: 700;
+}
+
+.action-button.urgent-claim-btn:hover {
+  background: linear-gradient(135deg, #b91c1c, #991b1b) !important;
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
+}
+

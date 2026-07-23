@@ -1,0 +1,219 @@
+.cpm-inline-wrapper {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.cpm-inline-card {
+  background-color: var(--bg-card, #ffffff);
+  border: 2px solid var(--border-primary, rgba(37, 99, 235, 0.3));
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.cpm-inline-card h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-foreground, #0f172a);
+  text-align: right;
+}
+
+.cpm-inline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cpm-toggle-picker-btn {
+  background: transparent;
+  border: 1px solid var(--border-color, #cbd5e1);
+  color: #2563eb;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cpm-toggle-picker-btn:hover {
+  background: #eff6ff;
+  border-color: #2563eb;
+}
+
+.cpm-picker-container {
+  margin: 8px 0;
+  animation: drpFadeIn 0.2s ease-in-out;
+}
+
+@keyframes drpFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cpm-inline-card textarea {
+  width: 100%;
+  background-color: var(--bg-input, #f8fafc);
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 14px;
+  resize: none;
+  font-family: inherit;
+  color: inherit;
+  box-sizing: border-box;
+}
+
+.cpm-inline-card textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.cpm-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .cpm-fields-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.cpm-fields-grid label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+  margin-bottom: 4px;
+  text-align: right;
+}
+
+.cpm-fields-grid select,
+.cpm-fields-grid input[type="number"] {
+  width: 100%;
+  background-color: var(--bg-input, #f8fafc);
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: inherit;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.cpm-fields-grid select:focus,
+.cpm-fields-grid input[type="number"]:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.cpm-checkboxes {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.cpm-checkboxes label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  justify-content: flex-end;
+  margin-bottom: 0;
+}
+
+.cpm-checkboxes span {
+  font-size: 12px;
+  color: var(--text-muted, #64748b);
+}
+
+.cpm-checkboxes input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.cpm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.cpm-btn-cancel {
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #cbd5e1);
+  font-size: 14px;
+  color: var(--text-muted, #64748b);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cpm-btn-cancel:hover {
+  background-color: #f1f5f9;
+}
+
+.cpm-btn-submit {
+  padding: 8px 20px;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, rgb(27, 61, 123), rgb(37, 99, 235));
+  transition: opacity 0.2s;
+}
+
+.cpm-btn-submit:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.cpm-btn-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cpm-error {
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  border: 1px solid #fecaca;
+}
+
+.cpm-anonymous-tip {
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: right;
+  animation: drpFadeIn 0.2s ease-in-out;
+}
+
+body.dark-theme .cpm-anonymous-tip {
+  background-color: rgba(30, 64, 175, 0.25);
+  border-color: rgba(191, 219, 254, 0.3);
+  color: #93c5fd;
+}

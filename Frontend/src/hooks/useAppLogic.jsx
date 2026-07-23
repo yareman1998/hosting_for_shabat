@@ -3,8 +3,8 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { fetchCurrentUser, logout } from '../store/authSlice'
 import Layout from '../components/Common/Layout/Layout'
-import HomePage from '../pages/Home/Home'
-import HomeGuest from '../pages/Home/HomeGuest/HomeGuest' // <-- Added HomeGuest import
+import HomeGuest from '../pages/Home/HomeGuest/HomeGuest'
+import HomeHost from '../pages/Home/HomeHost/HomeHost'
 import FindHost from '../pages/FindHost/FindHost'
 import HostDetails from '../pages/HostDetails/HostDetails'
 import MyRequests from '../pages/MyRequests/MyRequests'
@@ -57,11 +57,13 @@ export function useAppLogic() {
           {
             index: true,
             // <-- Updated routing logic for the homepage
-            element: userRole === 'admin' 
-              ? <Navigate to="/admin" replace /> 
-              : userRole === 'guest' 
-                ? <HomeGuest /> 
-                : <HomePage />
+            element: userRole === 'admin'
+              ? <Navigate to="/admin" replace />
+              : userRole === 'guest'
+                ? <HomeGuest />
+                : userRole === 'host'
+                  ? <HomeHost />
+                  : <>NotFound</>
           },
           {
             path: 'profile',

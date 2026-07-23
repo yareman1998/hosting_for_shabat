@@ -28,9 +28,15 @@ class GuestPost(Base):
         Enum(PostStatus, native_enum=True), default=PostStatus.OPEN
     )
     requested_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    start_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    end_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    nights_count: Mapped[Optional[int]] = mapped_column(nullable=True, default=1, server_default=text("1"))
     description: Mapped[str]
     guests_count: Mapped[int] = mapped_column(
         default=1, server_default=text("1")
+    )
+    is_anonymous: Mapped[bool] = mapped_column(
+        default=True, server_default=text("true")
     )
     claimed_by_host_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("host_profiles.id", ondelete="SET NULL"), nullable=True, index=True
@@ -57,14 +63,16 @@ class GuestPost(Base):
 
     @property
     def guest_name(self) -> str:
-        if self.guest_profile:
-            if self.guest_profile.is_anonymous:
-                return "Soldier" if self.guest_profile.is_soldier_or_national_service else "Anonymous Guest"
-            return self.guest_profile.user.full_name if self.guest_profile.user else "Guest"
-        return "Guest"
+        if getattr(self, 'is_anonymous', False) or (self.guest_profile and getattr(self.guest_profile, 'is_anonymous', False)):
+            return "אנונימי"
+        if self.guest_profile and self.guest_profile.user:
+            return self.guest_profile.user.full_name
+        return "אנונימי"
 
     @property
     def unit_name(self) -> Optional[str]:
+        if getattr(self, 'is_anonymous', False):
+            return None
         if self.guest_profile and not self.guest_profile.is_anonymous:
             return self.guest_profile.unit_name
         return None

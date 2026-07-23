@@ -57,11 +57,33 @@ export const getRelativeTimeHebrew = (dateString) => {
     if (diffHours === 1) return 'לפני שעה';
     if (diffHours === 2) return 'לפני שעתיים';
     if (diffHours < 24) return `לפני ${diffHours} שעות`;
-    if (diffDays === 1) return 'אתמול';
-    if (diffDays === 2) return 'שלשום';
     return `לפני ${diffDays} ימים`;
   } catch {
     return '';
   }
 };
+
+/**
+ * Checks if a requested date is within the next 24 hours and post is unapproved
+ * @param {string} requestedDateStr 
+ * @returns {{ isUrgent: boolean, hoursLeft: number, isPast: boolean }}
+ */
+export const checkPostUrgency = (requestedDateStr) => {
+  if (!requestedDateStr) return { isUrgent: false, hoursLeft: Infinity, isPast: false };
+  try {
+    const now = new Date();
+    const eventDate = new Date(requestedDateStr);
+    const diffMs = eventDate - now;
+    const hoursLeft = diffMs / (1000 * 60 * 60);
+
+    const isPast = hoursLeft < 0;
+    const isUrgent = hoursLeft >= 0 && hoursLeft <= 24;
+
+    return { isUrgent, hoursLeft: Math.max(0, Math.floor(hoursLeft)), isPast };
+  } catch {
+    return { isUrgent: false, hoursLeft: Infinity, isPast: false };
+  }
+};
+
+
 

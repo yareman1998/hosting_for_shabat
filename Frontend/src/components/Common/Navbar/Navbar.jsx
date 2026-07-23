@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -21,7 +21,7 @@ import './Navbar.css';
 export default function Navbar() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  
+
   // States & Selectors
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
@@ -37,8 +37,8 @@ export default function Navbar() {
     { path: '/', label: 'בית', roles: ['guest', 'host'], icon: <House className="nav-icon" /> },
     { path: '/find-host', label: 'מצא מארח', roles: ['guest'], icon: <Search className="nav-icon" /> },
     { path: '/my-requests', label: 'הבקשות שלי', roles: ['guest'], hasBadge: true, icon: <FileText className="nav-icon" /> },
-    { path: '/requests-board', label: 'לוח בקשות', roles: ['host'], icon: <ClipboardList className="nav-icon" /> },
-    { path: '/admin', end: true, label: 'לוח בקרה', roles: ['admin'], icon: <LayoutDashboard className="nav-icon" /> },
+    { path: '/requests-board', label: 'לוח בקשות', roles: ['host'], hasBadge: true, icon: <ClipboardList className="nav-icon" /> },
+    { path: '/admin', end: true, label: 'לוח בקרה', roles: ['admin'], hasBadge: true, icon: <LayoutDashboard className="nav-icon" /> },
     { path: '/admin/users', label: 'ניהול משתמשים', roles: ['admin'], icon: <Users className="nav-icon" /> },
     { path: '/admin/listings', label: 'דירות ומארחים', roles: ['admin'], icon: <Building className="nav-icon" /> },
     { path: '/admin/bookings', label: 'בקשות', roles: ['admin'], icon: <Inbox className="nav-icon" /> },
@@ -85,7 +85,7 @@ export default function Navbar() {
 
   const handleLogout = () => {
     setIsDropdownOpen(false);
-    dispatch(logout()); 
+    dispatch(logout());
     navigate('/login');
   };
 
@@ -114,10 +114,10 @@ export default function Navbar() {
           <Bell className="nav-icon" />
           <span className="bell-badge"></span>
         </div>
-        
+
         <div className="profile-dropdown-container" ref={dropdownRef}>
-          <div 
-            className="profile-circle" 
+          <div
+            className="profile-circle"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           >
             {getInitials()}
@@ -129,7 +129,7 @@ export default function Navbar() {
                 <div className="dropdown-large-initial">{getInitials()}</div>
                 <span>שלום {firstName}!</span>
               </div>
-              
+
               <div className="dropdown-divider"></div>
 
               <button className="dropdown-item" onClick={() => { setIsDropdownOpen(false); navigate('/profile'); }}>

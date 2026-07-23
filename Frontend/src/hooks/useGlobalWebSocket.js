@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
-import { setPosts, setLoading, setError, fetchPosts } from '../store/requestsSlice';
+import { setPosts, setLoading, fetchPosts } from '../store/requestsSlice';
 
 export function useGlobalWebSocket(userRole) {
   const dispatch = useDispatch();
@@ -21,13 +21,11 @@ export function useGlobalWebSocket(userRole) {
     const wsUrl = apiUrl.replace(/^http/, 'ws') + '/posts/ws?token=' + encodeURIComponent(token);
 
     function connect() {
-      dispatch(setError(null));
       const ws = new WebSocket(wsUrl);
       socketRef.current = ws;
 
       ws.onopen = () => {
         console.log('Global Posts WebSocket connected');
-        dispatch(setError(null));
       };
 
       ws.onmessage = (event) => {
@@ -43,16 +41,15 @@ export function useGlobalWebSocket(userRole) {
       };
 
       ws.onerror = (err) => {
-        console.error('Global Posts WebSocket error:', err);
-        dispatch(setError('שגיאה בחיבור לשרת'));
-        dispatch(setLoading(false));
+        console.warn('Global Posts WebSocket error (using HTTP fallback):', err);
       };
 
-      ws.onclose = () => {
-        console.log('Global Posts WebSocket closed, attempting reconnect...');
-        reconnectTimeoutRef.current = setTimeout(() => {
-          connect();
-        }, 5000);
+      ws.onclose = (event) => {
+        if (!event.wasClean) {
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connect();
+          }, 5000);
+        }
       };
     }
 
@@ -69,3 +66,4 @@ export function useGlobalWebSocket(userRole) {
     };
   }, [userRole, dispatch]);
 }
+

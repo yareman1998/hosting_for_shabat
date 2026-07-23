@@ -24,7 +24,7 @@ const requestsSlice = createSlice({
   reducers: {
     setPosts: (state, action) => {
       state.posts = action.payload;
-      state.badgeCount = action.payload.length;
+      state.badgeCount = action.payload.filter(p => p.status === 'open' || p.status === 'pending').length;
     },
     setBadgeCount: (state, action) => {
       state.badgeCount = action.payload;
@@ -44,7 +44,7 @@ const requestsSlice = createSlice({
       })
       .addCase(fetchPosts.fulfilled, (state, action) => {
         state.posts = action.payload;
-        state.badgeCount = action.payload.length;
+        state.badgeCount = action.payload.filter(p => p.status === 'open' || p.status === 'pending').length;
         state.loading = false;
       })
       .addCase(fetchPosts.rejected, (state, action) => {

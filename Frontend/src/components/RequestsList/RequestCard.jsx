@@ -1,12 +1,11 @@
-import { Utensils, Users, Heart, Edit3 } from 'lucide-react';
-import { formatHebrewDate, getRelativeTimeHebrew } from '../../utils/date';
+import { Utensils, Users, Heart, Edit3, Loader2, AlertCircle, Clock } from 'lucide-react';
+import { formatHebrewDate, getRelativeTimeHebrew, checkPostUrgency } from '../../utils/date';
 
-export default function RequestCard({ post, userRole, onAction }) {
+export default function RequestCard({ post, userRole, onAction, isClaiming }) {
   // Determine displayed name
-  const isAnonymous = post.is_anonymous || post.guest_name === 'Soldier' || post.guest_name === 'Anonymous Guest';
-  const displayName = isAnonymous ? 'חייל אנונימי' : (post.guest_name || 'אורח');
+  const isAnonymous = post.is_anonymous || post.guest_name === 'Soldier' || post.guest_name === 'Anonymous Guest' || post.guest_name === 'אנונימי' || post.guest_name === 'חייל אנונימי' || post.guest_name === 'אורח אנונימי';
+  const displayName = isAnonymous ? 'אנונימי' : (post.guest_name || 'אורח');
 
-  // Determine subtitle details: "מוצנח · מרכז · שישי, 18 ביולי 2025"
   const unit = post.unit_name || post.service_type || 'חייל';
   const region = post.region || 'מרכז';
   const dateFormatted = formatHebrewDate(post.requested_date);
@@ -15,13 +14,23 @@ export default function RequestCard({ post, userRole, onAction }) {
   // Time details
   const timeAgo = getRelativeTimeHebrew(post.created_at);
 
-  // Status mapping
+  // Status & Urgency mapping
+  const isUnapproved = post.status !== 'matched' && post.status !== 'approved';
+  const { isUrgent, hoursLeft } = checkPostUrgency(post.requested_date);
+  const showUrgentNotice = isUnapproved && isUrgent;
+
   const statusLabel = post.status === 'open' ? 'פתוח' : 'אושר';
 
   return (
-    <div className="request-card">
+    <div className={`request-card ${showUrgentNotice ? 'urgent-card' : ''}`}>
       <div className="card-header">
         <div className="status-badge-container">
+          {showUrgentNotice && (
+            <span className="status-badge urgent-badge">
+              <AlertCircle size={13} />
+              דחוף - בעוד {hoursLeft === 0 ? 'פחות משעה' : `${hoursLeft} שעות`}!
+            </span>
+          )}
           <span className={`status-badge ${post.status === 'matched' ? 'matched' : ''}`}>
             {statusLabel}
           </span>
@@ -50,16 +59,32 @@ export default function RequestCard({ post, userRole, onAction }) {
 
       <div className="card-actions">
         {userRole === 'host' ? (
-          <button 
-            className="action-button claim-button"
+          <button
+            className={`action-button claim-button ${showUrgentNotice ? 'urgent-claim-btn' : ''}`}
             onClick={() => onAction && onAction(post)}
-            disabled={post.status === 'matched'}
+            disabled={post.status === 'matched' || isClaiming}
           >
-            <Heart className="w-4 h-4" />
-            {post.status === 'matched' ? 'בקשה זו אושרה' : 'דרוש בקשה זו'}
+            {isClaiming ? (
+              <>
+                <Loader2 className="w-4 h-4 spin-icon" />
+                <span>שולח למערכת...</span>
+              </>
+            ) : post.status === 'matched' ? (
+              'בקשה זו אושרה'
+            ) : showUrgentNotice ? (
+              <>
+                <Clock className="w-4 h-4" />
+                <span>דרוש עכשיו</span>
+              </>
+            ) : (
+              <>
+                <Heart className="w-4 h-4" />
+                <span>דרוש בקשה זו</span>
+              </>
+            )}
           </button>
         ) : (
-          <button 
+          <button
             className="action-button edit-button"
             onClick={() => onAction && onAction(post)}
           >
@@ -71,3 +96,4 @@ export default function RequestCard({ post, userRole, onAction }) {
     </div>
   );
 }
+

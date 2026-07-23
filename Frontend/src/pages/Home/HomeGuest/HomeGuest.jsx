@@ -1,6 +1,7 @@
-import React from 'react';
+import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import {  
-  FileText, 
+  Newspaper,
   CheckCircle2, 
   Sparkles, 
   Send, 
@@ -11,8 +12,12 @@ import {
   Bot
 } from 'lucide-react';
 import "./HomeGuest.css";
+import CreatePostModal from '../../../components/RequestsList/CreatePostModal';
+import { fetchPosts } from '../../../store/requestsSlice';
 
 export default function GuestHome() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const dispatch = useDispatch();
   const featuredHosts = [
     {
       id: 1,
@@ -79,13 +84,19 @@ export default function GuestHome() {
           <p className="gh-hero-info">כניסת שבת בשעה 19:45 · 8 משפחות מחכות לכם</p>
           
           <div className="gh-hero-actions">
-            <button className="gh-btn-secondary">
-              <FileText size={18} />
+            <button className="gh-btn-secondary" onClick={() => setIsModalOpen((prev) => !prev)}>
+              <Newspaper size={16} />
               פרסם בקשה
             </button>
           </div>
         </div>
       </section>
+
+      <CreatePostModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={() => dispatch(fetchPosts())}
+      />
 
       {/* 2. SUCCESS ALERT */}
       <div className="gh-alert-success">

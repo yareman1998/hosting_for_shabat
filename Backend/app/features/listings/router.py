@@ -62,7 +62,7 @@ def delete_listing(listing_id: uuid.UUID, host_profile_id: uuid.UUID = Depends(r
 
 
 
-from app.features.availability.services import get_host_upcoming_availability
+from app.features.availability.services import get_hosts_upcoming_availability_batch
 
 @router.get("/search", response_model=List[HostSearchResponse])
 def search_hosts(
@@ -79,6 +79,8 @@ def search_hosts(
         query = query.filter(HostProfile.kashrut_level == kashrut_level)
     
     results = query.all()
+    host_ids = [profile.id for profile in results]
+    availability_map = get_hosts_upcoming_availability_batch(host_ids, db)
     
     for idx, profile in enumerate(results):
         # Calculate or assign realistic AI match score
@@ -89,7 +91,7 @@ def search_hosts(
             # Provide high default match score
             profile.match_score = max(75, 96 - (idx * 4))
             
-        avail = get_host_upcoming_availability(profile.id, db)
+        avail = availability_map.get(profile.id, {"open_dates": [], "open_day_names": [], "is_available_this_week": False})
         profile.upcoming_open_dates = avail["open_dates"]
         profile.upcoming_open_days = avail["open_day_names"]
         profile.is_available_this_week = avail["is_available_this_week"]

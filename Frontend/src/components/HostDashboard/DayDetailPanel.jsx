@@ -92,8 +92,6 @@ export default function DayDetailPanel() {
       } else {
         await postsApi.claimPost(post.id);
       }
-      dispatch(fetchPosts());
-      dispatch(fetchAvailability());
     } catch (err) {
       console.error('Failed to approve request:', err);
       alert('שגיאה באישור הבקשה: ' + (err.response?.data?.detail || err.message));
@@ -110,8 +108,6 @@ export default function DayDetailPanel() {
       } else {
         await bookingsApi.respondToBooking(post.id, 'rejected');
       }
-      dispatch(fetchPosts());
-      dispatch(fetchAvailability());
     } catch (err) {
       console.error('Failed to reject request:', err);
       alert('שגיאה בדחיית הבקשה: ' + (err.response?.data?.detail || err.message));

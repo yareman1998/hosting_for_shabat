@@ -30,21 +30,18 @@ otp_store = {}  # format: {phone_number: {"code": str, "expires_at": datetime}}
 @router.post("/register/request-otp", status_code=status.HTTP_200_OK)
 def request_otp(data: OTPRequestSchema, db: Session = Depends(get_db)):
     # Validate that neither the phone nor the email already exists
-    existing_user = db.query(User).filter(
-        (User.phone_number == data.phone_number) | (User.email == data.email)
-    ).first()
-    
-    if existing_user:
-        if existing_user.phone_number == data.phone_number:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Phone number already registered"
-            )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email address already registered"
-            )
+    phone_exists = db.query(db.query(User.id).filter(User.phone_number == data.phone_number).exists()).scalar()
+    if phone_exists:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Phone number already registered"
+        )
+    email_exists = db.query(db.query(User.id).filter(User.email == data.email).exists()).scalar()
+    if email_exists:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email address already registered"
+        )
     
     # Generate 6-digit random code
     code = f"{random.randint(100_000, 999_999)}"
@@ -100,7 +97,7 @@ def register_verify(data: UserRegisterVerifySchema, db: Session = Depends(get_db
         )
         
     # Check database again for duplicate email or phone number
-    if db.query(User).filter((User.email == data.email) | (User.phone_number == data.phone_number)).first():
+    if db.query(db.query(User.id).filter((User.email == data.email) | (User.phone_number == data.phone_number)).exists()).scalar():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email or phone already registered"
@@ -156,7 +153,7 @@ def register(user_in: UserCreate, background_tasks: BackgroundTasks, db: Session
     if user_in.email == settings.ADMIN_EMAIL or user_in.user_type == UserType.ADMIN:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot register with admin email or role")
 
-    if db.query(User).filter((User.email == user_in.email) | (User.phone_number == user_in.phone_number)).first():
+    if db.query(db.query(User.id).filter((User.email == user_in.email) | (User.phone_number == user_in.phone_number)).exists()).scalar():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email or phone already registered")
 
     expires_at = datetime.now(timezone.utc) + _OTP_TTL

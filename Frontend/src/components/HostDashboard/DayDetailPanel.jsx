@@ -37,12 +37,14 @@ const STATUS_META = {
 };
 
 import { useNavigate } from 'react-router-dom';
+import { HostingDetailsModal } from '../Common/HostingDetailsModal';
 
 export default function DayDetailPanel() {
   const dispatch = useDispatch();
   const { selectedDate, rules, overrides, bookings } = useSelector((s) => s.availability);
   const posts = useSelector((s) => s.requests?.posts || []);
   const [submittingId, setSubmittingId] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const navigate = useNavigate();
 
   const handleClose = useCallback(() => dispatch(deselectDate()), [dispatch]);
@@ -303,15 +305,30 @@ export default function DayDetailPanel() {
                   <MessageSquare size={16} />
                   צ'אט
                 </button>
-                <button className="ddp-chat-link">
+                <button 
+                  className="ddp-chat-link"
+                  onClick={() => setShowDetailsModal(true)}
+                >
                   <ExternalLink size={16} />
-                  פרטי שיבוץ
+                  פרטי אירוח
                 </button>
               </div>
               <p className="ddp-matched-badge">האירוח אושר! ✓</p>
             </div>
           </div>
         )}
+
+        <HostingDetailsModal
+          isOpen={showDetailsModal}
+          onClose={() => setShowDetailsModal(false)}
+          data={{
+            ...booking,
+            other_party_name: booking.guest_name || booking.soldier_name || 'אורח / חייל',
+            other_party_phone: booking.guestPhone || booking.phone || booking.guest_phone,
+            hosting_date: booking.date || booking.hosting_date || selectedDateStr
+          }}
+          isHostOverride={true}
+        />
 
         {!isPast && status !== 'booked' && (
           <div className="ddp-actions">

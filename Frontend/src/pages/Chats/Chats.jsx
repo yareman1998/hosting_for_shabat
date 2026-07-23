@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { useChatList } from '../../hooks/useChatList';
 import { useChatMessages } from '../../hooks/useChatMessages';
 import { ChatSidebar } from '../../components/Chats/ChatSidebar';
@@ -36,7 +37,9 @@ export default function Chats() {
         ) : (
           <>
             {/* Chat Header */}
-            <ChatHeader activeChat={activeChat} />
+            <ChatHeader 
+              activeChat={activeChat} 
+            />
 
             {/* Chat Messages */}
             <ChatMessageList

@@ -96,9 +96,17 @@ def get_my_chats(current_user: User = Depends(get_current_user), db: Session = D
         for match in matches:
             last_message = db.query(Message).filter(Message.match_id == match.id).order_by(desc(Message.created_at)).first()
             unread_count = db.query(Message).filter(Message.match_id == match.id, Message.sender_id != current_user.id, Message.is_read == False).count()
-            guest_prof = match.guest_post.guest_profile
-            other_name = (guest_prof.user.full_name if (guest_prof and guest_prof.user) else None) or match.guest_post.guest_name or "אורח"
-            hosting_date = match.guest_post.start_date if match.guest_post else None
+            guest_post = match.guest_post
+            guest_prof = guest_post.guest_profile if guest_post else None
+            is_anon = False
+            if guest_post:
+                is_anon = getattr(guest_post, 'is_anonymous', False) or guest_post.guest_name in ['Soldier', 'Anonymous Guest', 'אנונימי', 'חייל אנונימי', 'אורח אנונימי']
+            
+            if is_anon:
+                other_name = 'אנונימי'
+            else:
+                other_name = (guest_prof.user.full_name if (guest_prof and guest_prof.user) else None) or (guest_post.guest_name if guest_post else None) or "אורח"
+            hosting_date = guest_post.start_date if guest_post else None
             if hosting_date is None:
                 continue  # skip matches without a valid date
             chats.append(ChatPreviewResponse(

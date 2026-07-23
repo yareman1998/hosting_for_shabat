@@ -3,7 +3,7 @@ import { postsApi } from '../../api/api';
 import DateRangePicker from '../Common/DateRangePicker/DateRangePicker';
 import './CreatePostModal.css';
 
-export default function CreatePostModal({ isOpen, onClose, onSuccess }) {
+export default function CreatePostModal({ isOpen, onClose, onSuccess, initialData = null }) {
   const getDefaultDate = () => {
     const d = new Date();
     d.setDate(d.getDate() + ((5 + 7 - d.getDay()) % 7 || 7));
@@ -11,22 +11,28 @@ export default function CreatePostModal({ isOpen, onClose, onSuccess }) {
     return d;
   };
 
-  const [dateRange, setDateRange] = useState({
-    startDate: getDefaultDate(),
-    endDate: null,
-    nightsCount: 0,
+  const [dateRange, setDateRange] = useState(() => {
+    if (initialData?.requested_date || initialData?.start_date) {
+      const s = new Date(initialData.start_date || initialData.requested_date);
+      const e = initialData.end_date ? new Date(initialData.end_date) : null;
+      return { startDate: s, endDate: e, nightsCount: initialData.nights_count || 0 };
+    }
+    return { startDate: getDefaultDate(), endDate: null, nightsCount: 0 };
   });
-  const [description, setDescription] = useState('');
-  const [guestsCount, setGuestsCount] = useState(1);
-  const [region, setRegion] = useState('מרכז');
-  const [kashrut, setKashrut] = useState('כשר');
-  const [needsLodging, setNeedsLodging] = useState(false);
-  const [isAnonymous, setIsAnonymous] = useState(true);
+
+  const [description, setDescription] = useState(initialData?.description || '');
+  const [guestsCount, setGuestsCount] = useState(initialData?.guests_count || 1);
+  const [region, setRegion] = useState(initialData?.region || 'מרכז');
+  const [kashrut, setKashrut] = useState(initialData?.kashrut || 'כשר');
+  const [needsLodging, setNeedsLodging] = useState(initialData?.needs_lodging || false);
+  const [isAnonymous, setIsAnonymous] = useState(initialData?.is_anonymous ?? true);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
   if (!isOpen) return null;
+
+  const isEdit = Boolean(initialData && initialData.id);
 
   const resetForm = () => {
     setDateRange({
@@ -65,7 +71,7 @@ export default function CreatePostModal({ isOpen, onClose, onSuccess }) {
       const startIso = (dateRange.startDate || getDefaultDate()).toISOString();
       const endIso = dateRange.endDate ? dateRange.endDate.toISOString() : null;
 
-      await postsApi.create({
+      const payload = {
         requested_date: startIso,
         start_date: startIso,
         end_date: endIso,
@@ -76,14 +82,20 @@ export default function CreatePostModal({ isOpen, onClose, onSuccess }) {
         kashrut,
         needs_lodging: needsLodging,
         is_anonymous: isAnonymous,
-      });
+      };
+
+      if (isEdit) {
+        await postsApi.update(initialData.id, payload);
+      } else {
+        await postsApi.create(payload);
+      }
 
       resetForm();
       if (onSuccess) onSuccess();
       onClose();
     } catch (err) {
-      console.error('Failed to create post:', err);
-      setError(err.response?.data?.detail || 'שגיאה ביצירת הבקשה');
+      console.error('Failed to save post:', err);
+      setError(err.response?.data?.detail || 'שגיאה בשמירת הבקשה');
     } finally {
       setSubmitting(false);
     }
@@ -104,7 +116,9 @@ export default function CreatePostModal({ isOpen, onClose, onSuccess }) {
         {error && <div className="cpm-error">{error}</div>}
 
         <div className="cpm-inline-header">
-          <h3 className="font-bold text-foreground text-right">פרסם בקשת אירוח חדשה</h3>
+          <h3 className="font-bold text-foreground text-right">
+            {isEdit ? 'עריכת בקשת אירוח' : 'פרסם בקשת אירוח חדשה'}
+          </h3>
           <button
             type="button"
             className="cpm-toggle-picker-btn"
@@ -224,7 +238,7 @@ export default function CreatePostModal({ isOpen, onClose, onSuccess }) {
             className="px-5 py-2 rounded-xl text-white font-semibold text-sm disabled:opacity-40 hover:opacity-90 cpm-btn-submit"
             style={{ background: 'linear-gradient(135deg, rgb(27, 61, 123), rgb(37, 99, 235))' }}
           >
-            {submitting ? 'מפרסם...' : 'פרסם'}
+            {submitting ? (isEdit ? 'שומר...' : 'מפרסם...') : (isEdit ? 'עדכן בקשה' : 'פרסם')}
           </button>
         </div>
       </form>

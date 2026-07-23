@@ -11,7 +11,7 @@ from app.database.models.user import User, UserType
 from app.database.models.post import GuestPost, PostStatus
 from app.database.models.match import Match, MatchStatus
 from app.features.auth.services import get_current_user
-from app.features.posts.schemas import GuestPostCreate, GuestPostResponse
+from app.features.posts.schemas import GuestPostCreate, GuestPostUpdate, GuestPostResponse
 
 router = APIRouter(prefix="/posts", tags=["Guest Posts"])
 
@@ -146,6 +146,46 @@ def get_posts(
         posts = db.query(GuestPost).filter(GuestPost.status == PostStatus.OPEN).all()
         posts.sort(key=lambda p: (not p.is_urgent, p.requested_date))
         return posts
+
+@router.put("/{post_id}", response_model=GuestPostResponse)
+async def update_post(
+    post_id: uuid.UUID,
+    post_in: GuestPostUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.user_type != UserType.GUEST or not current_user.guest_profile:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only guests with profiles can edit posts"
+        )
+
+    post = db.query(GuestPost).filter(GuestPost.id == post_id).first()
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Guest post not found"
+        )
+
+    if post.guest_profile_id != current_user.guest_profile.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only edit your own posts"
+        )
+
+    update_data = post_in.model_dump(exclude_unset=True)
+    if "requested_date" in update_data and update_data["requested_date"] and "start_date" not in update_data:
+        update_data["start_date"] = update_data["requested_date"]
+
+    for field, value in update_data.items():
+        setattr(post, field, value)
+
+    db.commit()
+    db.refresh(post)
+
+    await post_manager.broadcast_updates()
+    return post
+
 
 @router.post("/{post_id}/claim")
 async def claim_post(

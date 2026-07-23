@@ -65,6 +65,7 @@ export const listingsApi = {
 // Posts (Guest open boards requests) API
 export const postsApi = {
   create: (postData) => api.post('/posts', postData),
+  update: (id, postData) => api.put(`/posts/${id}`, postData),
   getOpenPosts: () => api.get('/posts'),
   claimPost: (id) => api.post(`/posts/${id}/claim`),
 };

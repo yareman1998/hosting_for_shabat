@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import RequestCard from './RequestCard';
+import CreatePostModal from './CreatePostModal';
 import { postsApi } from '../../api/api';
 import { checkPostUrgency } from '../../utils/date';
 import './RequestsList.css';
 
 
-export default function RequestsList() {
+export default function RequestsList({ userRole: userRoleProp }) {
   const { posts, loading, error } = useSelector((state) => state.requests);
   const user = useSelector((state) => state.auth.user);
 
-  const currentRole = user?.user_type;
+  const currentRole = userRoleProp || user?.user_type;
   const currentGuestProfileId = user?.profile?.id || user?.guest_profile?.id;
 
   const [localPosts, setLocalPosts] = useState([]);
@@ -37,7 +38,7 @@ export default function RequestsList() {
 
   // Filter posts so a guest only sees their own posts, while hosts see all fetched posts
   const displayedPosts = localPosts.filter(post => {
-    if (currentRole === 'guest' && post.guest_name !== currentGuestProfileId && post.guest_profile_id !== currentGuestProfileId) {
+    if (currentRole === 'guest' && currentGuestProfileId && post.guest_profile_id && post.guest_profile_id !== currentGuestProfileId) {
       return false;
     }
 
@@ -70,6 +71,8 @@ export default function RequestsList() {
   });
 
 
+  const [editingPost, setEditingPost] = useState(null);
+
   const handleAction = async (post) => {
     // Real API implementation
     if (currentRole === 'host') {
@@ -84,8 +87,7 @@ export default function RequestsList() {
         setClaimingPostId(null);
       }
     } else {
-      // Guest action placeholder
-      alert(`עריכת בקשה עבור פוסט ${post.id}`);
+      setEditingPost(post);
     }
   };
 

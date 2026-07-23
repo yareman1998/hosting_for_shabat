@@ -16,6 +16,16 @@ class GuestPostBase(BaseModel):
 class GuestPostCreate(GuestPostBase):
     pass
 
+class GuestPostUpdate(BaseModel):
+    requested_date: Optional[datetime] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    nights_count: Optional[int] = None
+    description: Optional[str] = None
+    guests_count: Optional[int] = None
+    is_anonymous: Optional[bool] = None
+
+
 class GuestPostResponse(GuestPostBase):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID

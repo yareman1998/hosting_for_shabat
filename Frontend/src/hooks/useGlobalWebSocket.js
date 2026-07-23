@@ -17,8 +17,18 @@ export function useGlobalWebSocket(userRole) {
     // Fetch initial posts instantly via HTTP REST API
     dispatch(fetchPosts());
 
-    const apiUrl = import.meta.env.VITE_API_URL;
-    const wsUrl = apiUrl.replace(/^http/, 'ws') + '/posts/ws?token=' + encodeURIComponent(token);
+    let baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    baseUrl = baseUrl.replace(/\/+$/, '').replace(/\/api$/, '');
+    if (baseUrl.startsWith('https://')) {
+      baseUrl = baseUrl.replace(/^https:\/\//, 'wss://');
+    } else if (baseUrl.startsWith('http://')) {
+      baseUrl = baseUrl.replace(/^http:\/\//, 'ws://');
+    } else if (!baseUrl.startsWith('ws://') && !baseUrl.startsWith('wss://')) {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      baseUrl = `${protocol}//${window.location.host}`;
+    }
+    baseUrl = baseUrl.replace(/\/+$/, '');
+    const wsUrl = `${baseUrl}/api/posts/ws?token=` + encodeURIComponent(token);
 
     function connect() {
       const ws = new WebSocket(wsUrl);

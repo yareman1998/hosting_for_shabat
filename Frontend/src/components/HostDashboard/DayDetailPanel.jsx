@@ -97,9 +97,18 @@ export default function DayDetailPanel() {
       } else {
         await postsApi.claimPost(post.id);
       }
+      // Refresh state across calendar & posts
+      dispatch(fetchAvailability());
+      dispatch(fetchPosts());
     } catch (err) {
       console.error('Failed to approve request:', err);
-      alert('שגיאה באישור הבקשה: ' + (err.response?.data?.detail || err.message));
+      const detail = err.response?.data?.detail;
+      const errorMsg = typeof detail === 'string'
+        ? detail
+        : Array.isArray(detail)
+        ? detail.map(e => e.msg || e.detail).join(', ')
+        : (detail && typeof detail === 'object' ? JSON.stringify(detail) : err.message);
+      alert('שגיאה באישור הבקשה: ' + errorMsg);
     } finally {
       setSubmittingId(null);
     }
@@ -110,12 +119,19 @@ export default function DayDetailPanel() {
       setSubmittingId(post.id);
       if (post.pending_match_id) {
         await bookingsApi.respondToBooking(post.pending_match_id, 'rejected');
-      } else {
-        await bookingsApi.respondToBooking(post.id, 'rejected');
       }
+      // Refresh state across calendar & posts
+      dispatch(fetchAvailability());
+      dispatch(fetchPosts());
     } catch (err) {
       console.error('Failed to reject request:', err);
-      alert('שגיאה בדחיית הבקשה: ' + (err.response?.data?.detail || err.message));
+      const detail = err.response?.data?.detail;
+      const errorMsg = typeof detail === 'string'
+        ? detail
+        : Array.isArray(detail)
+        ? detail.map(e => e.msg || e.detail).join(', ')
+        : (detail && typeof detail === 'object' ? JSON.stringify(detail) : err.message);
+      alert('שגיאה בדחיית הבקשה: ' + errorMsg);
     } finally {
       setSubmittingId(null);
     }
@@ -322,10 +338,10 @@ export default function DayDetailPanel() {
           isOpen={showDetailsModal}
           onClose={() => setShowDetailsModal(false)}
           data={{
-            ...booking,
-            other_party_name: booking.guest_name || booking.soldier_name || 'אורח / חייל',
-            other_party_phone: booking.guestPhone || booking.phone || booking.guest_phone,
-            hosting_date: booking.date || booking.hosting_date || selectedDateStr
+            ...(booking || {}),
+            other_party_name: booking?.guest_name || booking?.soldier_name || 'אורח / חייל',
+            other_party_phone: booking?.guestPhone || booking?.phone || booking?.guest_phone,
+            hosting_date: booking?.date || booking?.hosting_date || selectedDate
           }}
           isHostOverride={true}
         />

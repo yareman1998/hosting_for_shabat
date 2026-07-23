@@ -17,36 +17,86 @@ export default function NotificationBell() {
   // 2. Pull notification data straight from Redux
   const { items: notifications, unreadCount } = useSelector((state) => state.notifications);
 
-  // 3. The WebSocket Connection Hook
+  // 3. The WebSocket Connection Hook with Auto-Reconnect and Heartbeat
   useEffect(() => {
-    // Don't try to connect if the user isn't logged in yet
     if (!userId) return;
 
-    // Open the connection to your FastAPI backend
-    // (Adjust the port or URL if your backend runs somewhere other than localhost:8000)
-    const apiUrl = import.meta.env.VITE_API_URL;
-    const wsUrl = apiUrl.replace(/^http/, 'ws') + `/api/ws/notifications/${userId}` ;
-    const socket = new WebSocket(wsUrl);
-    
+    let socket = null;
+    let pingInterval = null;
+    let reconnectTimeout = null;
+    let isComponentMounted = true;
 
-    socket.onopen = () => {
-      console.log("🟢 Connected to live notifications");
+    const connectWebSocket = () => {
+      // Dynamic WS/WSS URL resolution
+      let baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      // Strip trailing slashes and trailing /api to avoid /api/api
+      baseUrl = baseUrl.replace(/\/+$/, '').replace(/\/api$/, '');
+
+      if (baseUrl.startsWith('https://')) {
+        baseUrl = baseUrl.replace(/^https:\/\//, 'wss://');
+      } else if (baseUrl.startsWith('http://')) {
+        baseUrl = baseUrl.replace(/^http:\/\//, 'ws://');
+      } else if (!baseUrl.startsWith('ws://') && !baseUrl.startsWith('wss://')) {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        baseUrl = `${protocol}//${window.location.host}`;
+      }
+      baseUrl = baseUrl.replace(/\/+$/, '');
+      const wsUrl = `${baseUrl}/api/ws/notifications/${userId}`;
+
+      socket = new WebSocket(wsUrl);
+
+      socket.onopen = () => {
+        console.log("🟢 Connected to live notifications WS");
+
+        // Start heartbeat ping every 25 seconds
+        if (pingInterval) clearInterval(pingInterval);
+        pingInterval = setInterval(() => {
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'ping' }));
+          }
+        }, 25000);
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const incomingData = JSON.parse(event.data);
+          // Ignore heartbeat pong messages
+          if (incomingData?.type === 'pong') return;
+
+          dispatch(receiveNotification(incomingData));
+        } catch (err) {
+          console.error("Error parsing WS notification:", err);
+        }
+      };
+
+      socket.onclose = () => {
+        console.log("🔴 Disconnected from live notifications WS");
+        if (pingInterval) clearInterval(pingInterval);
+
+        // Auto reconnect after 4 seconds if component is still mounted
+        if (isComponentMounted) {
+          reconnectTimeout = setTimeout(() => {
+            console.log("🔄 Attempting to reconnect to live notifications WS...");
+            connectWebSocket();
+          }, 4000);
+        }
+      };
+
+      socket.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        socket?.close();
+      };
     };
 
-    // When FastAPI pushes a message, this function catches it instantly!
-    socket.onmessage = (event) => {
-      const incomingData = JSON.parse(event.data);
-      // Send the new notification directly to Redux
-      dispatch(receiveNotification(incomingData));
-    };
+    connectWebSocket();
 
-    socket.onclose = () => {
-      console.log("🔴 Disconnected from live notifications");
-    };
-
-    // Cleanup: Close the connection if the user logs out or leaves the site
     return () => {
-      socket.close();
+      isComponentMounted = false;
+      if (pingInterval) clearInterval(pingInterval);
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (socket) {
+        socket.close();
+      }
     };
   }, [userId, dispatch]);
 

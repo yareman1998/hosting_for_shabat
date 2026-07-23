@@ -99,14 +99,20 @@ export default function RequestsList({ userRole: userRoleProp }) {
       try {
         setClaimingPostId(post.id);
         if (post.pending_match_id) {
-          await bookingsApi.respondToBooking(post.pending_match_id, 'approved');
+          await bookingsApi.respondToBooking(post.pending_match_id, 'matched');
         } else {
           await postsApi.claimPost(post.id);
         }
         dispatch(fetchPosts());
       } catch (err) {
         console.error('Failed to claim/approve post:', err);
-        alert('שגיאה באישור הבקשה: ' + (err.response?.data?.detail || err.message));
+        const detail = err.response?.data?.detail;
+        const errorMsg = typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+          ? detail.map(e => e.msg || e.detail).join(', ')
+          : (detail && typeof detail === 'object' ? JSON.stringify(detail) : err.message);
+        alert('שגיאה באישור הבקשה: ' + errorMsg);
       } finally {
         setClaimingPostId(null);
       }

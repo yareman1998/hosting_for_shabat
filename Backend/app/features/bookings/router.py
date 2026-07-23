@@ -114,6 +114,24 @@ async def request_booking(
     db.commit()
     db.refresh(new_match)
     await post_manager.broadcast_updates()
+
+    # Send notification trigger to host via WebSocket
+    try:
+        from app.database.models.profile import HostProfile
+        from app.features.notifications.router import manager as notification_manager
+        host_prof = db.query(HostProfile).filter(HostProfile.id == req.host_profile_id).first()
+        if host_prof and host_prof.user_id:
+            await notification_manager.send_personal_notification({
+                "id": str(uuid.uuid4()),
+                "title": "בקשת אירוח חדשה  Shabbat",
+                "message": f"קיבלת בקשת אירוח מ{current_user.full_name or 'אורח'}",
+                "type": "alert",
+                "time": "עכשיו",
+                "isRead": False
+            }, str(host_prof.user_id))
+    except Exception as e:
+        print(f"Failed to trigger booking request notification: {e}")
+
     return new_match
 
 @router.get("/bookings/incoming", response_model=List[BookingResponse])
@@ -198,6 +216,34 @@ async def respond_booking(
     db.commit()
     db.refresh(match)
     await post_manager.broadcast_updates()
+
+    # Trigger notification to recipient
+    try:
+        from app.features.notifications.router import manager as notification_manager
+        target_user_id = None
+        status_str = "אושרה" if match.status == MatchStatus.MATCHED else "נדחתה"
+        
+        if is_host and match.guest_post and match.guest_post.guest_profile:
+            target_user_id = match.guest_post.guest_profile.user_id
+            note_title = f"בקשת האירוח שלך {status_str}!"
+            note_msg = f"המארח {current_user.full_name or ''} {status_str} את בקשת האירוח לשבת."
+        elif is_guest and match.host_profile:
+            target_user_id = match.host_profile.user_id
+            note_title = f"תשובה מענה לבקשת אירוח"
+            note_msg = f"האורח {current_user.full_name or ''} {status_str} את הצעת האירוח."
+
+        if target_user_id:
+            await notification_manager.send_personal_notification({
+                "id": str(uuid.uuid4()),
+                "title": note_title,
+                "message": note_msg,
+                "type": "success" if match.status == MatchStatus.MATCHED else "alert",
+                "time": "עכשיו",
+                "isRead": False
+            }, str(target_user_id))
+    except Exception as e:
+        print(f"Failed to trigger booking response notification: {e}")
+
     return match
 
 

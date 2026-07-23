@@ -214,6 +214,35 @@ async def websocket_chat_endpoint(websocket: WebSocket, match_id: uuid.UUID, tok
 
             # Only broadcast to OTHER participants; sender already appended locally
             await manager.broadcast(match_id, msg_payload, sender_id=user_id)
+
+            # Send notification via notification WebSocket to recipient
+            try:
+                from app.features.notifications.router import manager as notification_manager
+                with SessionLocal() as db:
+                    match_obj = db.query(Match).options(joinedload(Match.guest_post)).filter(Match.id == match_id).first()
+                    sender_obj = db.query(User).filter(User.id == user_id).first()
+                    if match_obj:
+                        recipient_id = None
+                        if match_obj.host_profile and match_obj.host_profile.user_id == user_id:
+                            # Sender is host, recipient is guest
+                            if match_obj.guest_post and match_obj.guest_post.guest_profile:
+                                recipient_id = match_obj.guest_post.guest_profile.user_id
+                        else:
+                            # Sender is guest, recipient is host
+                            if match_obj.host_profile:
+                                recipient_id = match_obj.host_profile.user_id
+
+                        if recipient_id:
+                            await notification_manager.send_personal_notification({
+                                "id": str(uuid.uuid4()),
+                                "title": f"הודעה חדשה מ{sender_obj.full_name if sender_obj else 'משתמש'}",
+                                "message": data[:60] + ("..." if len(data) > 60 else ""),
+                                "type": "message",
+                                "time": "עכשיו",
+                                "isRead": False
+                            }, str(recipient_id))
+            except Exception as e:
+                print(f"Failed to trigger chat notification: {e}")
     except WebSocketDisconnect:
         manager.disconnect(match_id, websocket)
     except Exception as e:

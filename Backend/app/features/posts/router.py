@@ -233,13 +233,13 @@ async def claim_post(
             detail="Guest post is already claimed"
         )
         
-    post.status = PostStatus.MATCHED
+    post.status = PostStatus.PENDING
     post.claimed_by_host_id = current_user.host_profile.id
     
     match = Match(
         guest_post_id=post.id,
         host_profile_id=current_user.host_profile.id,
-        status=MatchStatus.MATCHED
+        status=MatchStatus.PENDING
     )
     db.add(match)
     db.commit()
@@ -254,9 +254,9 @@ async def claim_post(
         
         notification_payload = {
             "id": str(uuid.uuid4()),
-            "type": "success",
-            "title": "בקשת האירוח אושרה!",
-            "message": "משפחת המארחים אישרה את בקשת האירוח שלך לשבת הקרובה.",
+            "type": "alert",
+            "title": "הצעת אירוח חדשה!",
+            "message": f"המארח {current_user.full_name or ''} הציע לארח אותך לשבת! לחץ לאישור או דחייה.",
             "time": "עכשיו",
             "isRead": False
         }

@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import RequestCard from './RequestCard';
 import CreatePostModal from './CreatePostModal';
 import { postsApi } from '../../api/api';
 import { checkPostUrgency } from '../../utils/date';
+import { fetchPosts } from '../../store/requestsSlice';
 import './RequestsList.css';
 
 
 export default function RequestsList({ userRole: userRoleProp }) {
+  const dispatch = useDispatch();
   const { posts, loading, error } = useSelector((state) => state.requests);
   const user = useSelector((state) => state.auth.user);
 
@@ -30,6 +32,9 @@ export default function RequestsList({ userRole: userRoleProp }) {
           return isUnapproved && checkPostUrgency(post.requested_date).isUrgent;
         });
         setActiveFilter(hasUrgent ? 'urgent' : 'pending');
+      } else if (currentRole === 'guest') {
+        const hasPendingApproval = posts.some((post) => post.status === 'pending');
+        setActiveFilter(hasPendingApproval ? 'pending' : 'all');
       }
       setHasInitializedFilter(true);
     }
@@ -48,7 +53,10 @@ export default function RequestsList({ userRole: userRoleProp }) {
       return isUnapproved && isUrgent;
     }
     if (activeFilter === 'pending') {
-      return post.status === 'open' || post.status === 'pending';
+      return currentRole === 'guest' ? post.status === 'pending' : (post.status === 'open' || post.status === 'pending');
+    }
+    if (activeFilter === 'open') {
+      return post.status === 'open';
     }
     if (activeFilter === 'approved') {
       return post.status === 'matched' || post.status === 'approved';
@@ -91,8 +99,15 @@ export default function RequestsList({ userRole: userRoleProp }) {
     }
   };
 
-  const filterTabs = [
-    ...(currentRole === 'host' ? [{ id: 'urgent', label: 'מחכה לאישור דחוף' }] : []),
+  const pendingGuestCount = localPosts.filter(p => p.status === 'pending').length;
+
+  const filterTabs = currentRole === 'guest' ? [
+    { id: 'pending', label: pendingGuestCount > 0 ? `ממתין לאישורך (${pendingGuestCount})` : 'ממתין לאישורך' },
+    { id: 'open', label: 'מחפש מארח' },
+    { id: 'all', label: 'הכל' },
+    { id: 'approved', label: 'מאושר' },
+  ] : [
+    { id: 'urgent', label: 'מחכה לאישור דחוף' },
     { id: 'pending', label: 'ממתין' },
     { id: 'all', label: 'הכל' },
     { id: 'approved', label: 'מאושר' },
@@ -134,8 +149,10 @@ export default function RequestsList({ userRole: userRoleProp }) {
             userRole={currentRole}
             onAction={handleAction}
             isClaiming={claimingPostId === post.id}
+            onUpdateSuccess={() => dispatch(fetchPosts())}
           />
         ))
+
       )}
     </div>
   );

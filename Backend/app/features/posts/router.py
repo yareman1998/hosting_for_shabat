@@ -1,4 +1,5 @@
 import uuid
+from sqlalchemy import select
 import jwt
 import asyncio
 from typing import List, Dict
@@ -37,15 +38,8 @@ class PostConnectionManager:
     async def broadcast_updates(self):
         """Recalculate and send updates to all active clients according to their role."""
         with SessionLocal() as db:
-            # Pre-fetch open posts for hosts (including posts requested today or future)
             now = datetime.now(timezone.utc)
             today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            open_posts = db.query(GuestPost).filter(
-                GuestPost.status == PostStatus.OPEN,
-                GuestPost.requested_date >= today_start
-            ).all()
-            open_posts.sort(key=lambda p: (not p.is_urgent, p.requested_date))
-            open_posts_data = [GuestPostResponse.model_validate(p).model_dump(mode="json") for p in open_posts]
 
             for conn in list(self.active_connections):
                 try:
@@ -54,10 +48,18 @@ class PostConnectionManager:
                         host_profile_id = host_user.host_profile.id if (host_user and host_user.host_profile) else None
                         
                         if host_profile_id:
+                            rejected_select = select(Match.guest_post_id).where(
+                                Match.host_profile_id == host_profile_id,
+                                Match.status == MatchStatus.REJECTED
+                            )
+
                             posts = db.query(GuestPost).filter(
                                 GuestPost.requested_date >= today_start,
-                                (GuestPost.status == PostStatus.OPEN) | 
-                                ((GuestPost.status == PostStatus.MATCHED) & (GuestPost.claimed_by_host_id == host_profile_id))
+                                ~GuestPost.id.in_(rejected_select),
+                                (
+                                    (GuestPost.status == PostStatus.OPEN) | 
+                                    ((GuestPost.status.in_([PostStatus.PENDING, PostStatus.MATCHED])) & (GuestPost.claimed_by_host_id == host_profile_id))
+                                )
                             ).all()
                         else:
                             posts = db.query(GuestPost).filter(
@@ -68,7 +70,7 @@ class PostConnectionManager:
                         posts_data = [GuestPostResponse.model_validate(p).model_dump(mode="json") for p in posts]
                         await conn["websocket"].send_json(posts_data)
                     elif conn["user_type"] == UserType.GUEST:
-                        # Guests only get their own posts
+                        # Guests get their own posts
                         guest_posts = db.query(GuestPost).join(GuestPost.guest_profile).filter(
                             GuestPost.guest_profile.has(user_id=conn["user_id"])
                         ).order_by(GuestPost.created_at.desc()).all()
@@ -122,10 +124,18 @@ def get_posts(
         host_profile_id = current_user.host_profile.id if current_user.host_profile else None
         
         if host_profile_id:
+            rejected_select = select(Match.guest_post_id).where(
+                Match.host_profile_id == host_profile_id,
+                Match.status == MatchStatus.REJECTED
+            )
+
             posts = db.query(GuestPost).filter(
                 GuestPost.requested_date >= today_start,
-                (GuestPost.status == PostStatus.OPEN) | 
-                ((GuestPost.status == PostStatus.MATCHED) & (GuestPost.claimed_by_host_id == host_profile_id))
+                ~GuestPost.id.in_(rejected_select),
+                (
+                    (GuestPost.status == PostStatus.OPEN) | 
+                    ((GuestPost.status.in_([PostStatus.PENDING, PostStatus.MATCHED])) & (GuestPost.claimed_by_host_id == host_profile_id))
+                )
             ).all()
         else:
             posts = db.query(GuestPost).filter(
@@ -207,21 +217,31 @@ async def claim_post(
             detail="Guest post not found"
         )
         
-    if post.status == PostStatus.MATCHED:
+    if post.status != PostStatus.OPEN:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Guest post is already claimed"
+            detail="הבקשה כבר בטיפול או שאושרה על ידי מארח אחר"
         )
         
-    post.status = PostStatus.MATCHED
+    post.status = PostStatus.PENDING
     post.claimed_by_host_id = current_user.host_profile.id
     
-    match = Match(
-        guest_post_id=post.id,
-        host_profile_id=current_user.host_profile.id,
-        status=MatchStatus.MATCHED
-    )
-    db.add(match)
+    existing_match = db.query(Match).filter(
+        Match.guest_post_id == post.id,
+        Match.host_profile_id == current_user.host_profile.id
+    ).first()
+
+    if existing_match:
+        existing_match.status = MatchStatus.PENDING
+        match = existing_match
+    else:
+        match = Match(
+            guest_post_id=post.id,
+            host_profile_id=current_user.host_profile.id,
+            status=MatchStatus.PENDING
+        )
+        db.add(match)
+
     db.commit()
     
     # Broadcast live updates to active WebSockets directly
@@ -272,10 +292,18 @@ async def websocket_posts_endpoint(
                 current_user = db.query(User).filter(User.id == user_id).first()
                 host_profile_id = current_user.host_profile.id if (current_user and current_user.host_profile) else None
                 if host_profile_id:
+                    rejected_select = select(Match.guest_post_id).where(
+                        Match.host_profile_id == host_profile_id,
+                        Match.status == MatchStatus.REJECTED
+                    )
+
                     posts = db.query(GuestPost).filter(
                         GuestPost.requested_date >= today_start,
-                        (GuestPost.status == PostStatus.OPEN) | 
-                        ((GuestPost.status == PostStatus.MATCHED) & (GuestPost.claimed_by_host_id == host_profile_id))
+                        ~GuestPost.id.in_(rejected_select),
+                        (
+                            (GuestPost.status == PostStatus.OPEN) | 
+                            ((GuestPost.status.in_([PostStatus.PENDING, PostStatus.MATCHED])) & (GuestPost.claimed_by_host_id == host_profile_id))
+                        )
                     ).all()
                 else:
                     posts = db.query(GuestPost).filter(
@@ -303,4 +331,5 @@ async def websocket_posts_endpoint(
     except Exception as e:
         print(f"[WebSocket Disconnect Error] {e}")
         post_manager.disconnect(websocket)
+
 

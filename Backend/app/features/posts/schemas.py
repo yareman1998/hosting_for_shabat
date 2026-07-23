@@ -36,4 +36,9 @@ class GuestPostResponse(GuestPostBase):
     guest_name: str
     unit_name: Optional[str] = None
     is_anonymous: bool = True
+    claimed_by_host_id: Optional[uuid.UUID] = None
+    claimed_by_host_name: Optional[str] = None
+    claimed_by_host_city: Optional[str] = None
+    pending_match_id: Optional[uuid.UUID] = None
+
 

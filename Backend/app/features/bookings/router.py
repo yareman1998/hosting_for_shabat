@@ -119,44 +119,68 @@ async def respond_booking(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if current_user.user_type != UserType.HOST or not current_user.host_profile:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only hosts can respond to bookings"
-        )
-        
-    match = db.query(Match).filter(
-        Match.id == match_id,
-        Match.host_profile_id == current_user.host_profile.id
-    ).first()
+    match = db.query(Match).filter(Match.id == match_id).first()
     if not match:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Booking request not found"
         )
         
-    if data.status == MatchStatus.MATCHED:
-        if match.guest_post:
-            if match.guest_post.status == PostStatus.MATCHED:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="This guest hosting request has already been matched with another host"
-                )
-            match.guest_post.status = PostStatus.MATCHED
-            match.guest_post.claimed_by_host_id = current_user.host_profile.id
-            
+    is_host = current_user.user_type == UserType.HOST and current_user.host_profile and match.host_profile_id == current_user.host_profile.id
+    is_guest = current_user.user_type == UserType.GUEST and current_user.guest_profile and match.guest_post and match.guest_post.guest_profile_id == current_user.guest_profile.id
+    
+    if not (is_host or is_guest):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to respond to this booking request"
+        )
+        
+    post = match.guest_post
+    
+    if is_guest:
+        # Double Action Prevention: Guest can only respond if post is currently PENDING
+        if not post or post.status != PostStatus.PENDING:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="הבקשה כבר אינה במצב ממתין לאישורך"
+            )
+        if data.status == MatchStatus.MATCHED:
+            match.status = MatchStatus.MATCHED
+            post.status = PostStatus.MATCHED
             # Reject other pending matches for this guest post
             db.query(Match).filter(
-                Match.guest_post_id == match.guest_post_id,
+                Match.guest_post_id == post.id,
                 Match.id != match.id,
                 Match.status == MatchStatus.PENDING
             ).update({"status": MatchStatus.REJECTED})
-            
-    match.status = data.status
+        elif data.status == MatchStatus.REJECTED:
+            match.status = MatchStatus.REJECTED
+            post.claimed_by_host_id = None
+            post.status = PostStatus.OPEN
+    elif is_host:
+        if data.status == MatchStatus.MATCHED:
+            if post:
+                if post.status == PostStatus.MATCHED:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="This guest hosting request has already been matched"
+                    )
+                post.status = PostStatus.MATCHED
+                post.claimed_by_host_id = current_user.host_profile.id
+                db.query(Match).filter(
+                    Match.guest_post_id == post.id,
+                    Match.id != match.id,
+                    Match.status == MatchStatus.PENDING
+                ).update({"status": MatchStatus.REJECTED})
+        elif data.status == MatchStatus.REJECTED:
+            match.status = MatchStatus.REJECTED
+        match.status = data.status
+
     db.commit()
     db.refresh(match)
     await post_manager.broadcast_updates()
     return match
+
 
 @router.get("/matches/{match_id}/details")
 def get_match_details(

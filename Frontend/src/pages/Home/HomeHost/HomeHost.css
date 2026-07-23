@@ -185,7 +185,7 @@
 ============================================= */
 .hh-stats-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
 
@@ -320,6 +320,12 @@
   margin: 0;
 }
 
+.ac-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .ac-nav-btn {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
@@ -366,6 +372,10 @@
 .dot--booked { background: #2563eb; }
 .dot--closed { background: #cbd5e1; }
 .dot--notice { background: #f59e0b; }
+.dot--pending-flashing {
+  background-color: #ef4444;
+  animation: ac-pulse-dot 1.2s infinite ease-in-out;
+}
 
 /* Day-of-week headers */
 .ac-grid-headers {
@@ -454,6 +464,18 @@
   background-color: #ef4444;
   z-index: 3;
   animation: ac-pulse-dot 1.2s infinite ease-in-out;
+}
+
+/* Yellow Dot at top-right for requests waiting for guest answer */
+.ac-waiting-guest-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #f59e0b;
+  z-index: 3;
 }
 
 @keyframes ac-pulse-dot {

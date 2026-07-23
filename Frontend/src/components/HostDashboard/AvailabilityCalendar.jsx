@@ -51,7 +51,11 @@ export default function AvailabilityCalendar() {
     const set = new Set();
     if (Array.isArray(posts)) {
       posts.forEach((p) => {
-        if (p.status === 'pending' || p.status === 'open') {
+        // Only trigger flashing red dot for requests that require HOST action:
+        // - OPEN posts (not claimed yet)
+        // - PENDING direct requests (guest asked host directly, host needs to respond)
+        const needsHostAction = p.status === 'open' || (p.status === 'pending' && Boolean(p.is_direct_request));
+        if (needsHostAction) {
           const startDateVal = p.start_date || p.requested_date || p.shabbat_date;
           const endDateVal = p.end_date;
 
@@ -87,6 +91,41 @@ export default function AvailabilityCalendar() {
     return set;
   }, [posts, bookings]);
 
+  const waitingGuestDatesSet = useMemo(() => {
+    const set = new Set();
+    if (Array.isArray(posts)) {
+      posts.forEach((p) => {
+        // Pending request waiting for guest answer: host claimed/approved, guest needs to respond
+        const isWaitingGuest = p.status === 'pending' && !p.is_direct_request;
+        if (isWaitingGuest) {
+          const startDateVal = p.start_date || p.requested_date || p.shabbat_date;
+          const endDateVal = p.end_date;
+
+          if (startDateVal) {
+            const startD = new Date(startDateVal);
+            if (!isNaN(startD.getTime())) {
+              const startStr = toDateStr(startD.getFullYear(), startD.getMonth(), startD.getDate());
+              set.add(startStr);
+
+              if (endDateVal) {
+                const endD = new Date(endDateVal);
+                if (!isNaN(endD.getTime()) && endD >= startD) {
+                  const curr = new Date(startD);
+                  while (curr <= endD) {
+                    const cStr = toDateStr(curr.getFullYear(), curr.getMonth(), curr.getDate());
+                    set.add(cStr);
+                    curr.setDate(curr.getDate() + 1);
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+    return set;
+  }, [posts]);
+
   const dayCells = useMemo(() => {
     const daysInMonth = getDaysInMonth(currentYear, currentMonth);
     const firstDow = getFirstDayOfWeek(currentYear, currentMonth);
@@ -104,11 +143,12 @@ export default function AvailabilityCalendar() {
       const status = computeDayStatus(dateStr, rules, overrides, bookings);
       const hasOverride = !!overrides[dateStr];
       const hasPendingRequest = pendingDatesSet.has(dateStr);
-      cells.push({ empty: false, day: d, dateStr, dayOfWeek, isWeekend, status, hasOverride, hasPendingRequest, key: dateStr });
+      const hasWaitingGuest = waitingGuestDatesSet.has(dateStr);
+      cells.push({ empty: false, day: d, dateStr, dayOfWeek, isWeekend, status, hasOverride, hasPendingRequest, hasWaitingGuest, key: dateStr });
     }
 
     return cells;
-  }, [currentYear, currentMonth, rules, overrides, bookings, pendingDatesSet]);
+  }, [currentYear, currentMonth, rules, overrides, bookings, pendingDatesSet, waitingGuestDatesSet]);
 
   const weekCells = useMemo(() => {
     if (viewMode !== 'week') return null;
@@ -123,10 +163,11 @@ export default function AvailabilityCalendar() {
       const status = computeDayStatus(dateStr, rules, overrides, bookings);
       const hasOverride = !!overrides[dateStr];
       const hasPendingRequest = pendingDatesSet.has(dateStr);
-      cells.push({ day: d.getDate(), dateStr, dayOfWeek, isWeekend, status, hasOverride, hasPendingRequest, key: dateStr });
+      const hasWaitingGuest = waitingGuestDatesSet.has(dateStr);
+      cells.push({ day: d.getDate(), dateStr, dayOfWeek, isWeekend, status, hasOverride, hasPendingRequest, hasWaitingGuest, key: dateStr });
     }
     return cells;
-  }, [viewMode, rules, overrides, bookings, pendingDatesSet]);
+  }, [viewMode, rules, overrides, bookings, pendingDatesSet, waitingGuestDatesSet]);
 
   const handleDayClick = (dateStr, status) => {
     if (status === 'past') return;
@@ -136,20 +177,23 @@ export default function AvailabilityCalendar() {
   return (
     <div className="ac-root">
       <div className="ac-header">
-        <button className="ac-nav-btn" id="cal-prev-month" onClick={() => dispatch(navigateMonth(-1))} aria-label="חודש קודם">
-          <ChevronRight size={20} />
-        </button>
         <h2 className="ac-month-title">{HEBREW_MONTHS[currentMonth]} {currentYear}</h2>
-        <button className="ac-nav-btn" id="cal-next-month" onClick={() => dispatch(navigateMonth(1))} aria-label="חודש הבא">
-          <ChevronLeft size={20} />
-        </button>
+        <div className="ac-nav-group">
+          <button className="ac-nav-btn" id="cal-prev-month" onClick={() => dispatch(navigateMonth(-1))} aria-label="חודש קודם">
+            <ChevronRight size={20} />
+          </button>
+          <button className="ac-nav-btn" id="cal-next-month" onClick={() => dispatch(navigateMonth(1))} aria-label="חודש הבא">
+            <ChevronLeft size={20} />
+          </button>
+        </div>
       </div>
 
       <div className="ac-legend">
         <span className="legend-item"><span className="legend-dot dot--open" />פתוח לאירוח</span>
         <span className="legend-item"><span className="legend-dot dot--booked" />תפוס</span>
         <span className="legend-item"><span className="legend-dot dot--closed" />חסום</span>
-        <span className="legend-item"><span className="legend-dot dot--notice" />עבר מועד</span>
+        <span className="legend-item"><span className="legend-dot dot--pending-flashing" />יש בקשה שטרם אושרה</span>
+        <span className="legend-item"><span className="legend-dot dot--notice" />מחכה לתשובת אורח</span>
       </div>
 
       {viewMode === 'month' ? (
@@ -172,7 +216,6 @@ export default function AvailabilityCalendar() {
                     cell.isWeekend ? 'ac-cell--weekend' : '',
                     cell.dateStr === todayStr ? 'ac-cell--today' : '',
                     cell.dateStr === selectedDate ? 'ac-cell--selected' : '',
-                    cell.hasOverride ? 'ac-cell--override' : '',
                   ].join(' ')}
                   onClick={() => handleDayClick(cell.dateStr, cell.status)}
                   aria-label={`${cell.day} בחודש, ${STATUS_LABEL[cell.status] || ''}`}
@@ -180,9 +223,11 @@ export default function AvailabilityCalendar() {
                 >
                   <span className="ac-day-number">{cell.day}</span>
                   {cell.hasPendingRequest && (
-                    <span className="ac-pending-request-dot" title="ישנה בקשת אירוח ממתינה" />
+                    <span className="ac-pending-request-dot" title="יש בקשה שטרם אושרה" />
                   )}
-                  {cell.hasOverride && <span className="ac-override-dot" title="שינוי ידני" />}
+                  {cell.hasWaitingGuest && (
+                    <span className="ac-waiting-guest-dot" title="מחכה לתשובת אורח" />
+                  )}
                   {cell.status === 'booked' && <span className="ac-booking-dot" />}
                   {STATUS_LABEL[cell.status] && cell.status !== 'past' && (
                     <span className="ac-day-label">{STATUS_LABEL[cell.status]}</span>
@@ -215,7 +260,16 @@ export default function AvailabilityCalendar() {
                 <span className={`agenda-badge agenda-badge--${cell.status}`}>
                   {STATUS_LABEL[cell.status] || 'עבר'}
                 </span>
-                {cell.hasOverride && <span className="agenda-override-tag">שינוי ידני</span>}
+                {cell.hasPendingRequest && (
+                  <span className="agenda-pending-tag" style={{ background: '#fee2e2', color: '#991b1b', fontSize: '11px', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                    יש בקשה שטרם אושרה
+                  </span>
+                )}
+                {cell.hasWaitingGuest && (
+                  <span className="agenda-waiting-tag" style={{ background: '#fef3c7', color: '#92400e', fontSize: '11px', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                    מחכה לתשובת אורח
+                  </span>
+                )}
               </div>
               {cell.status === 'booked' && bookings[cell.dateStr] && (
                 <div className="agenda-booking-col">

@@ -85,10 +85,6 @@ export default function HomeHost() {
           <h2>{totalBookings}</h2>
           <p>אירוחים פעילים</p>
         </div>
-        <div className="hh-stat-card hh-stat-green">
-          <h2>{totalOverrides}</h2>
-          <p>שינויים ידניים</p>
-        </div>
         <div className="hh-stat-card hh-stat-purple">
           <h2>{badgeCount}</h2>
           <p>בקשות ממתינות</p>

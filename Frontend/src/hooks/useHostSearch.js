@@ -93,7 +93,10 @@ export default function useHostSearch() {
           profile.religious_orientation,
           profile.kashrut_level === 'MEHADRIN' ? 'מהדרין' : 'כשר'
         ].filter(Boolean),
-        image_url: profile.image_url || null
+        image_url: profile.image_url || null,
+        upcoming_open_dates: profile.upcoming_open_dates || [],
+        upcoming_open_days: profile.upcoming_open_days || [],
+        is_available_this_week: profile.is_available_this_week !== undefined ? profile.is_available_this_week : true
       }));
 
       setHosts(mappedHosts);
@@ -119,6 +122,30 @@ export default function useHostSearch() {
   useEffect(() => {
     fetchHosts();
   }, [fetchHosts]);
+
+  // Listen to real-time WebSocket host availability updates (soft UI update)
+  useEffect(() => {
+    const handleAvailabilityUpdate = (event) => {
+      const detail = event.detail;
+      if (!detail || !detail.host_profile_id) return;
+      setHosts((prevHosts) =>
+        prevHosts.map((h) =>
+          h.id === detail.host_profile_id
+            ? {
+                ...h,
+                upcoming_open_dates: detail.upcoming_open_dates || [],
+                upcoming_open_days: detail.upcoming_open_days || [],
+                is_available_this_week: detail.is_available_this_week,
+                available_spots: detail.is_available_this_week ? (h.available_spots > 0 ? h.available_spots : 3) : 0,
+              }
+            : h
+        )
+      );
+    };
+
+    window.addEventListener('host_availability_updated', handleAvailabilityUpdate);
+    return () => window.removeEventListener('host_availability_updated', handleAvailabilityUpdate);
+  }, []);
 
   // Reset filters
   const handleResetFilters = () => {

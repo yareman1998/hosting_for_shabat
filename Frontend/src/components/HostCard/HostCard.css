@@ -30,6 +30,20 @@
   transform: scale(0.99);
 }
 
+.host-card-button:disabled,
+.host-card-button--disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.host-card-button:disabled:hover,
+.host-card-button--disabled:hover {
+  box-shadow: none;
+  transform: none;
+  border-color: var(--border, #e2e8f0);
+}
+
 /* 1. Media Top Section */
 .card-media-wrapper {
   position: relative;

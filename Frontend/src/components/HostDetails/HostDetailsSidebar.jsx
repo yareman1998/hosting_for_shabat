@@ -69,7 +69,7 @@ export default function HostDetailsSidebar({
       {/* Urgency Footnote */}
       {availableSpots > 0 ? (
         <p className="spots-urgency-text text-amber">
-          ⚡ נותרו רק {availableSpots} מקומות!
+         פנוי לאירוח של עד {availableSpots} חבר'ה!
         </p>
       ) : (
         <p className="spots-urgency-text text-red">

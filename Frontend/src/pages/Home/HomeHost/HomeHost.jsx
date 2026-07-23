@@ -125,7 +125,7 @@ export default function HomeHost() {
         </div>
 
         <div className={`hh-calendar-card ${loading ? 'hh-calendar-card--loading' : ''}`}>
-          {loading ? (
+          {loading && !rules ? (
             <div className="hh-loading-skeleton">
               <div className="hh-skeleton-header" />
               <div className="hh-skeleton-grid">

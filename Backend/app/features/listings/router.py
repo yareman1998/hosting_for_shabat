@@ -62,6 +62,8 @@ def delete_listing(listing_id: uuid.UUID, host_profile_id: uuid.UUID = Depends(r
 
 
 
+from app.features.availability.services import get_host_upcoming_availability
+
 @router.get("/search", response_model=List[HostSearchResponse])
 def search_hosts(
     city: Optional[str] = None,
@@ -87,5 +89,10 @@ def search_hosts(
             # Provide high default match score
             profile.match_score = max(75, 96 - (idx * 4))
             
+        avail = get_host_upcoming_availability(profile.id, db)
+        profile.upcoming_open_dates = avail["open_dates"]
+        profile.upcoming_open_days = avail["open_day_names"]
+        profile.is_available_this_week = avail["is_available_this_week"]
+
     return results
 

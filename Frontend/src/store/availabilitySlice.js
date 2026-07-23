@@ -289,11 +289,15 @@ const availabilitySlice = createSlice({
     // ── fetchAvailability ──
     builder
       .addCase(fetchAvailability.pending, (state) => {
-        state.loading = true;
+        if (!state.rules) {
+          state.loading = true;
+        }
+        state.syncing = true;
         state.error = null;
       })
       .addCase(fetchAvailability.fulfilled, (state, action) => {
         state.loading = false;
+        state.syncing = false;
         const { rule, overrides } = action.payload;
 
         // Merge DB rule into Redux (DB wins over localStorage on load)
@@ -307,6 +311,7 @@ const availabilitySlice = createSlice({
       })
       .addCase(fetchAvailability.rejected, (state, action) => {
         state.loading = false;
+        state.syncing = false;
         state.error = action.payload;
         // Keep localStorage data as fallback — don't wipe it
       });

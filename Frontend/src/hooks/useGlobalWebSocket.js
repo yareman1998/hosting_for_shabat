@@ -31,7 +31,9 @@ export function useGlobalWebSocket(userRole) {
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (Array.isArray(data)) {
+          if (data && data.type === 'HOST_AVAILABILITY_UPDATED') {
+            window.dispatchEvent(new CustomEvent('host_availability_updated', { detail: data }));
+          } else if (Array.isArray(data)) {
             dispatch(setPosts(data));
           }
           dispatch(setLoading(false));

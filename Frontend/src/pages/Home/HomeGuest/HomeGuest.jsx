@@ -1,31 +1,41 @@
-import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchDashboardStats } from "../../../store/statsSlice"; // Adjust this path if needed based on your folder structure
 import { 
-  Newspaper,
-  CheckCircle2, 
   Sparkles, 
   Send, 
   Star, 
   MapPin, 
-  ChevronLeft,
   Check,
   Bot
 } from 'lucide-react';
-import "./HomeGuest.css";
-import CreatePostModal from '../../../components/RequestsList/CreatePostModal';
-import { fetchPosts } from '../../../store/requestsSlice';
+import './HomeGuest.css';
 
 export default function HomeGuest() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const dispatch = useDispatch();
 
-  // Generate the live date in Hebrew format (e.g., "יום חמישי, 23 ביולי 2026")
+  // 1. Pull global stats (Hosts, Spots, Sleepovers) from the statsSlice
+  const { data: stats, status } = useSelector((state) => state.stats);
+
+  // 2. Pull personal requests count directly from the requestsSlice (Syncs with Navbar!)
+  // Note: Adjust 'badgeCount' if it's named something else in your requestsSlice
+  const myPendingRequests = useSelector((state) => state.requests.badgeCount || 0);
+
+  // Generate the live date in Hebrew format
   const formattedDate = new Intl.DateTimeFormat('he-IL', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
     year: 'numeric'
   }).format(new Date());
+
+  // 3. Fetch stats on mount if we haven't already
+  useEffect(() => {
+    if (status === 'idle') {
+      dispatch(fetchDashboardStats());
+    }
+  }, [status, dispatch]);
+
   const featuredHosts = [
     {
       id: 1,
@@ -84,66 +94,37 @@ export default function HomeGuest() {
   return (
     <div className="guest-home-container">
       
-      {/* 1. HERO SECTION */}
+      {/* HERO SECTION */}
       <section className="gh-hero">
         <div className="gh-hero-content">
           <span className="gh-hero-subtitle">שבת הקרובה</span>
-          {/* Injected the live dynamic date here */}
           <h1 className="gh-hero-title">{formattedDate}</h1>
           <p className="gh-hero-info">כניסת שבת בשעה 19:45 · 8 משפחות מחכות לכם</p>
-          
-          <div className="gh-hero-actions">
-            <button className="gh-btn-secondary" onClick={() => setIsModalOpen((prev) => !prev)}>
-              <Newspaper size={16} />
-              פרסם בקשה
-            </button>
-          </div>
         </div>
       </section>
 
-      <CreatePostModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSuccess={() => dispatch(fetchPosts())}
-      />
-
-      {/* 2. SUCCESS ALERT */}
-      <div className="gh-alert-success">
-        <div className="gh-alert-right">
-          <div className="gh-alert-icon-wrapper">
-            <CheckCircle2 size={20} className="gh-alert-icon" />
-          </div>
-          <div className="gh-alert-text">
-            <h4>האירוח שלך לשישי הקרוב אושר!</h4>
-            <p>משפחת כהן · מודיעין · שישי, 11 ביולי 2025</p>
-          </div>
-        </div>
-        <a href="#" className="gh-alert-link">
-          לפרטים <ChevronLeft size={16} />
-        </a>
-      </div>
-
-      {/* 3. STATS ROW */}
+      {/* STATS ROW - Wired to Redux State */}
       <section className="gh-stats-row">
         <div className="gh-stat-card">
-          <h2>8</h2>
+          <h2>{status === 'loading' ? '...' : stats.availableHosts}</h2>
           <p>מארחים זמינים</p>
         </div>
         <div className="gh-stat-card gh-stat-green">
-          <h2>24</h2>
+          <h2>{status === 'loading' ? '...' : stats.availableSpots}</h2>
           <p>מקומות פנויים</p>
         </div>
         <div className="gh-stat-card gh-stat-purple">
-          <h2>5</h2>
-          <p>בקשות פתוחות</p>
+          {/* Now pulls directly from your personal requests slice */}
+          <h2>{myPendingRequests}</h2>
+          <p>הבקשות שלי</p>
         </div>
         <div className="gh-stat-card gh-stat-yellow">
-          <h2>5</h2>
+          <h2>{status === 'loading' ? '...' : stats.hostsWithSleepover}</h2>
           <p>מארחים עם לינה</p>
         </div>
       </section>
 
-      {/* 4. AI AGENT SECTION */}
+      {/* AI AGENT SECTION */}
       <section className="gh-ai-section">
         <div className="gh-section-header">
           <h3>שאל את הסוכן החכם</h3>
@@ -209,11 +190,11 @@ export default function HomeGuest() {
         </div>
       </section>
 
-      {/* 5. FEATURED HOSTS */}
+      {/* FEATURED HOSTS */}
       <section className="gh-featured-section">
         <div className="gh-section-header">
           <h3>מארחים מובילים השבת</h3>
-          <a href="#" className="gh-link-all">כל המארחים <ChevronLeft size={16} /></a>
+          <span className="gh-link-all">כל המארחים</span>
         </div>
 
         <div className="gh-hosts-grid">
@@ -258,7 +239,7 @@ export default function HomeGuest() {
         </div>
       </section>
 
-      {/* 6. HOW IT WORKS */}
+      {/* HOW IT WORKS */}
       <section className="gh-how-it-works">
         <h3>איך זה עובד?</h3>
         <div className="gh-steps-container">

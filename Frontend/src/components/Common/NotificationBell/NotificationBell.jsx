@@ -1,96 +1,54 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { receiveNotification, markAllAsRead, markAsRead } from '../../../store/notificationsSlice';
 import { Bell, CheckCircle2, MessageSquare, AlertCircle, Check } from 'lucide-react';
 import './NotificationBell.css';
 
 export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const dispatch = useDispatch();
 
-  // Mock notifications - Later you and David can fetch these from your FastAPI/PostgreSQL backend
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'success',
-      title: 'בקשת האירוח אושרה!',
-      message: 'משפחת כהן אישרה את בקשת האירוח שלך לשבת הקרובה.',
-      time: 'לפני 10 דקות',
-      isRead: false,
-    },
-    {
-      id: 2,
-      type: 'message',
-      title: 'הודעה חדשה',
-      message: 'משפחת ישראלי שלחה לך הודעה בצ\'אט.',
-      time: 'לפני שעה',
-      isRead: false,
-    },
-    {
-      id: 3,
-      type: 'alert',
-      title: 'עדכון מערכת',
-      message: 'נוספו 5 משפחות חדשות באזור ירושלים.',
-      time: 'אתמול',
-      isRead: true,
-    },
-    {
-      id: 3,
-      type: 'alert',
-      title: 'עדכון מערכת',
-      message: 'נוספו 5 משפחות חדשות באזור ירושלים.',
-      time: 'אתמול',
-      isRead: true,
-    },
-    {
-      id: 3,
-      type: 'alert',
-      title: 'עדכון מערכת',
-      message: 'נוספו 5 משפחות חדשות באזור ירושלים.',
-      time: 'אתמול',
-      isRead: true,
-    },
-    {
-      id: 3,
-      type: 'alert',
-      title: 'עדכון מערכת',
-      message: 'נוספו 5 משפחות חדשות באזור ירושלים.',
-      time: 'אתמול',
-      isRead: true,
-    },
-    {
-      id: 3,
-      type: 'alert',
-      title: 'עדכון מערכת',
-      message: 'נוספו 5 משפחות חדשות באזור ירושלים.',
-      time: 'אתמול',
-      isRead: true,
-    },
-    {
-      id: 3,
-      type: 'alert',
-      title: 'עדכון מערכת',
-      message: 'נוספו 5 משפחות חדשות באזור ירושלים.',
-      time: 'אתמול',
-      isRead: true,
-    },
-    {
-      id: 3,
-      type: 'alert',
-      title: 'עדכון מערכת',
-      message: 'נוספו 5 משפחות חדשות באזור ירושלים.',
-      time: 'אתמול',
-      isRead: true,
-    },
-    {
-      id: 3,
-      type: 'alert',
-      title: 'עדכון מערכת',
-      message: 'נוספו 5 משפחות חדשות באזור ירושלים.',
-      time: 'אתמול',
-      isRead: true,
-    }
-  ]);
+  // 1. Pull the current user from Redux so we know who to connect as
+  const user = useSelector((state) => state.auth.user);
+  // (Make sure this matches exactly how the ID is stored in your auth object, e.g., user.id or user._id)
+  const userId = user?.id || user?.user_id; 
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  // 2. Pull notification data straight from Redux
+  const { items: notifications, unreadCount } = useSelector((state) => state.notifications);
+
+  // 3. The WebSocket Connection Hook
+  useEffect(() => {
+    // Don't try to connect if the user isn't logged in yet
+    if (!userId) return;
+
+    // Open the connection to your FastAPI backend
+    // (Adjust the port or URL if your backend runs somewhere other than localhost:8000)
+    const apiUrl = import.meta.env.VITE_API_URL;
+    const wsUrl = apiUrl.replace(/^http/, 'ws') + `/api/ws/notifications/${userId}` ;
+    const socket = new WebSocket(wsUrl);
+    
+
+    socket.onopen = () => {
+      console.log("🟢 Connected to live notifications");
+    };
+
+    // When FastAPI pushes a message, this function catches it instantly!
+    socket.onmessage = (event) => {
+      const incomingData = JSON.parse(event.data);
+      // Send the new notification directly to Redux
+      dispatch(receiveNotification(incomingData));
+    };
+
+    socket.onclose = () => {
+      console.log("🔴 Disconnected from live notifications");
+    };
+
+    // Cleanup: Close the connection if the user logs out or leaves the site
+    return () => {
+      socket.close();
+    };
+  }, [userId, dispatch]);
 
   // Handle clicking outside to close the dropdown
   useEffect(() => {
@@ -103,15 +61,12 @@ export default function NotificationBell() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+  const handleMarkAllAsRead = () => {
+    dispatch(markAllAsRead());
   };
 
   const handleNotificationClick = (id) => {
-    setNotifications(notifications.map(n =>
-      n.id === id ? { ...n, isRead: true } : n
-    ));
-    // Here you would also route the user to the relevant page (e.g., chat or request board)
+    dispatch(markAsRead(id));
     setIsOpen(false);
   };
 
@@ -126,7 +81,6 @@ export default function NotificationBell() {
 
   return (
     <div className="notification-bell-container" ref={dropdownRef}>
-      {/* Bell Button */}
       <button
         className={`nb-trigger-btn ${isOpen ? 'active' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
@@ -137,21 +91,23 @@ export default function NotificationBell() {
             <Bell className="nav-icon" size={22} />
             {unreadCount > 0 && (
               <span className="bell-badge"></span>
-            )}        </div>
+            )}
+          </div>
         </div>
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <div className="nb-dropdown">
           <div className="nb-header">
-            {unreadCount > 0 && (
+            {unreadCount > 0 ? (
               <>
-              <h3>{unreadCount} התראות חדשות</h3>
-              <button className="nb-mark-read-btn" onClick={markAllAsRead}>
-                <Check size={14} /> סמן הכל כנקרא
-              </button>
-            </>
+                <h3>{unreadCount} התראות חדשות</h3>
+                <button className="nb-mark-read-btn" onClick={handleMarkAllAsRead}>
+                  <Check size={14} /> סמן הכל כנקרא
+                </button>
+              </>
+            ) : (
+              <h3>התראות</h3>
             )}
           </div>
 
@@ -181,8 +137,6 @@ export default function NotificationBell() {
               ))
             )}
           </div>
-
-          
         </div>
       )}
     </div>

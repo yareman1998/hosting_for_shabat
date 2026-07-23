@@ -188,7 +188,7 @@ export const saveRules = createAsyncThunk(
 /**
  * Set a single date override and persist it to backend.
  */
-export const saveOverride = createAsyncThunk(
+const saveOverride = createAsyncThunk(
   'availability/saveOverride',
   async ({ dateStr, status }, { rejectWithValue }) => {
     try {
@@ -203,7 +203,7 @@ export const saveOverride = createAsyncThunk(
 /**
  * Delete a single date override from backend.
  */
-export const removeOverride = createAsyncThunk(
+const removeOverride = createAsyncThunk(
   'availability/removeOverride',
   async ({ dateStr }, { rejectWithValue }) => {
     try {

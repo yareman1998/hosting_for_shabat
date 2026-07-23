@@ -75,7 +75,7 @@ function overridesFromDB(dbOverrides) {
 
 // ─── Pure helpers (exported for use in components) ────────────────────────────
 
-export function getISOWeekNumber(date) {
+function getISOWeekNumber(date) {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
@@ -172,7 +172,7 @@ export const fetchAvailability = createAsyncThunk(
 /**
  * Save recurring rules to backend (called from RulesSettingsModal on Save).
  */
-export const saveRules = createAsyncThunk(
+const saveRules = createAsyncThunk(
   'availability/saveRules',
   async (rules, { rejectWithValue }) => {
     try {

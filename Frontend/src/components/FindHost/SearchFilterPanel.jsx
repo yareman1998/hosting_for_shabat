@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Search, Moon } from 'lucide-react';
 
 export default function SearchFilterPanel({
@@ -105,6 +105,26 @@ export default function SearchFilterPanel({
             <Moon size={14} className="moon-icon" />
             עם לינה בלבד
           </button>
+        </div>
+      </div>
+
+      {/* Vibe Filter Row */}
+      <div className="filter-item-group vibe-filter-group" style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px dashed #e2e8f0' }}>
+        <span className="filter-group-label">🎭 אווירת שולחן:</span>
+        <div className="filter-pills-container scrollbar-none" style={{ overflowX: 'auto', flexWrap: 'nowrap' }}>
+          {['#שולחן_תוסס', '#שקט_ורגוע', '#שירים_ורקודים', '#אוכל_עדתי', '#צעירים_וחברים'].map((vibeTag) => {
+            const isActive = searchTerm === vibeTag || searchTerm.includes(vibeTag);
+            return (
+              <button
+                key={vibeTag}
+                type="button"
+                className={`pill-btn vibe-pill-btn ${isActive ? 'active-pill' : ''}`}
+                onClick={() => onSearchChange && onSearchChange(isActive ? '' : vibeTag)}
+              >
+                {vibeTag}
+              </button>
+            );
+          })}
         </div>
       </div>
 

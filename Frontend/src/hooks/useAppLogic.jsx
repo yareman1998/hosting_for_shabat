@@ -10,6 +10,7 @@ import HostDetails from '../pages/HostDetails/HostDetails'
 import MyRequests from '../pages/MyRequests/MyRequests'
 import RequestsBoard from '../pages/RequestsBoard/RequestsBoard'
 import ProfilePage from '../pages/Profile/Profile'
+import ChatsPage from '../pages/Chats/Chats'
 import NotFound from '../pages/NotFound/NotFound'
 
 // Auth Views
@@ -112,6 +113,15 @@ export function useAppLogic() {
             element: (
               <ProtectedRoute allowedRoles={['host']}>
                 <RequestsBoard />
+              </ProtectedRoute>
+            )
+          },
+          // Shared Protected Routes
+          {
+            path: 'chats',
+            element: (
+              <ProtectedRoute allowedRoles={['guest', 'host']}>
+                <ChatsPage />
               </ProtectedRoute>
             )
           },

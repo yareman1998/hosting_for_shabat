@@ -47,6 +47,7 @@ class HostProfile(Base):
     has_pets: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
     accessibility: Mapped[Optional[str]]
     free_text_notes: Mapped[Optional[str]]
+    vibe_tags: Mapped[Optional[str]]
 
     user: Mapped["User"] = relationship(back_populates="host_profile")
     listings: Mapped[List["HostListing"]] = relationship(

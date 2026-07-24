@@ -42,8 +42,12 @@ class HostSearchResponse(BaseModel):
     has_lodging: Optional[bool] = True
     image_url: Optional[str] = None
     free_text_notes: Optional[str] = None
+    vibe_tags: Optional[List[str]] = []
     has_pets: Optional[bool] = False
     match_score: Optional[int] = None
+    upcoming_open_dates: Optional[List[str]] = []
+    upcoming_open_days: Optional[List[str]] = []
+    is_available_this_week: Optional[bool] = True
     user: Optional[UserSimpleResponse] = None
 
     @computed_field

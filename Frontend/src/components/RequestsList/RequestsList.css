@@ -176,10 +176,81 @@ body.dark-theme .card-tag.tag-kashrut {
   align-self: center;
 }
 
+.card-description-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 12px 0;
+}
+
+.card-bring-item {
+  background-color: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.card-matched-banner {
+  border-top: 1px solid #a7f3d0;
+  background-color: #ecfdf5;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border-radius: 12px;
+  margin-top: 8px;
+}
+
+.card-matched-links {
+  display: flex;
+  gap: 12px;
+}
+
+.card-matched-btn {
+  color: #047857;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.card-matched-btn:hover {
+  text-decoration: underline;
+}
+
+.card-matched-status {
+  color: #047857;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.direct-approve-btn {
+  background-color: #16a34a !important;
+  color: #ffffff !important;
+}
+
+.waiting-guest-btn {
+  opacity: 0.85;
+  background-color: #f59e0b !important;
+  color: #ffffff !important;
+  cursor: default !important;
+}
+
 .card-actions {
   display: flex;
   justify-content: flex-end;
   margin-top: 8px;
+  width: 100%;
 }
 
 .action-button {
@@ -216,6 +287,7 @@ body.dark-theme .card-tag.tag-kashrut {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
 
 .action-button:active {
   transform: scale(0.97);

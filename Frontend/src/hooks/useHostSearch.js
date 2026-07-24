@@ -88,7 +88,9 @@ export default function useHostSearch() {
             ? `אווירת בית: ${profile.religious_orientation}`
             : null) ||
           'נשמח מאוד לארח חיילים ולוחמים בסופי שבוע באווירה חמה, ארוחות שבת חגיגיות ויחס אישי.',
+        vibe_tags: profile.vibe_tags || [],
         tags: [
+          ...(profile.vibe_tags || []),
           profile.neighborhood,
           profile.religious_orientation,
           profile.kashrut_level === 'MEHADRIN' ? 'מהדרין' : 'כשר'
@@ -125,7 +127,7 @@ export default function useHostSearch() {
     fetchHosts();
   }, [fetchHosts]);
 
-  // Listen to real-time WebSocket host availability updates (soft UI update)
+  // Listen to real-time WebSocket host availability and profile updates (soft UI update)
   useEffect(() => {
     const handleAvailabilityUpdate = (event) => {
       const detail = event.detail;
@@ -138,7 +140,27 @@ export default function useHostSearch() {
                 upcoming_open_dates: detail.upcoming_open_dates || [],
                 upcoming_open_days: detail.upcoming_open_days || [],
                 is_available_this_week: detail.is_available_this_week,
-                available_spots: detail.is_available_this_week ? (h.available_spots > 0 ? h.available_spots : 3) : 0,
+                available_spots: detail.available_spots !== undefined ? detail.available_spots : (detail.is_available_this_week ? (h.available_spots > 0 ? h.available_spots : 3) : 0),
+              }
+            : h
+        )
+      );
+    };
+
+    const handleProfileUpdate = (event) => {
+      const detail = event.detail;
+      if (!detail || !detail.host_profile_id) return;
+      setHosts((prevHosts) =>
+        prevHosts.map((h) =>
+          h.id === detail.host_profile_id
+            ? {
+                ...h,
+                full_name: detail.full_name || h.full_name,
+                city: detail.city || h.city,
+                kashrut_level: detail.kashrut_level || h.kashrut_level,
+                available_spots: detail.available_spots !== undefined ? detail.available_spots : h.available_spots,
+                max_guests: detail.max_guests !== undefined ? detail.max_guests : h.max_guests,
+                biography: detail.free_text_notes || h.biography,
               }
             : h
         )
@@ -146,8 +168,13 @@ export default function useHostSearch() {
     };
 
     window.addEventListener('host_availability_updated', handleAvailabilityUpdate);
-    return () => window.removeEventListener('host_availability_updated', handleAvailabilityUpdate);
+    window.addEventListener('host_profile_updated', handleProfileUpdate);
+    return () => {
+      window.removeEventListener('host_availability_updated', handleAvailabilityUpdate);
+      window.removeEventListener('host_profile_updated', handleProfileUpdate);
+    };
   }, []);
+
 
   // Reset filters
   const handleResetFilters = () => {

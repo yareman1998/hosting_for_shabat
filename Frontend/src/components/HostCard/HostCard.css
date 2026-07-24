@@ -227,6 +227,16 @@
   font-weight: 500;
 }
 
+.card-vibe-pill {
+  font-size: 0.725rem;
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
 .star-icon-amber {
   width: 1rem;
   height: 1rem;

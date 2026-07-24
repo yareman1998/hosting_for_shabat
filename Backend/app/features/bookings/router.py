@@ -1,7 +1,7 @@
 import uuid
 import urllib.parse
 from datetime import datetime, timezone, timedelta
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.database.session import get_db
@@ -11,6 +11,7 @@ from app.database.models.post import GuestPost, PostStatus
 from app.features.auth.services import get_current_user
 from app.features.bookings.schemas import BookingRequestCreate, BookingResponse, MatchStatusUpdate
 from app.agent.services import AgentService
+from app.agent.prompts import get_default_icebreakers
 from app.features.posts.router import post_manager
 
 router = APIRouter(prefix="", tags=["Bookings & Matches"])
@@ -369,3 +370,33 @@ def get_match_details(
         "whatsapp_link": whatsapp_link,
         "icebreakers": icebreakers
     }
+
+
+@router.get("/agent/icebreakers")
+def get_quick_icebreakers(
+    match_id: Optional[uuid.UUID] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    user_role = "host" if (current_user and current_user.user_type == UserType.HOST) else "guest"
+    if match_id:
+        match = db.query(Match).filter(Match.id == match_id).first()
+        if match and match.host_profile and match.guest_post and match.guest_post.guest_profile:
+            host_info = {
+                "city": match.host_profile.city,
+                "kashrut_level": match.host_profile.kashrut_level,
+                "religious_orientation": match.host_profile.religious_orientation,
+                "free_text_notes": match.host_profile.free_text_notes,
+            }
+            guest_info = {
+                "is_soldier": match.guest_post.guest_profile.is_soldier_or_national_service,
+                "description": match.guest_post.description,
+                "food_preferences_allergies": match.guest_post.guest_profile.food_preferences_allergies,
+                "skills_give_take": match.guest_post.guest_profile.skills_give_take
+            }
+            return {"icebreakers": AgentService.generate_icebreakers(host_info, guest_info, user_role=user_role)}
+
+    return {"icebreakers": get_default_icebreakers(user_role)}
+
+
+

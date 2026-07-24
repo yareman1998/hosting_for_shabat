@@ -75,7 +75,8 @@ class UserResponse(UserBase):
     created_at: datetime
 
 class HostProfileBase(BaseModel):
-    city: str
+    model_config = ConfigDict(extra="ignore")
+    city: Optional[str] = "Not Specified"
     neighborhood: Optional[str] = None
     kashrut_level: KashrutLevel = KashrutLevel.KOSHER
     religious_orientation: Optional[str] = None
@@ -83,12 +84,33 @@ class HostProfileBase(BaseModel):
     emergency_available: bool = False
     full_address: Optional[str] = None
     max_guests: int = 1
+    available_spots: Optional[int] = None
     num_bedrooms: Optional[int] = None
     has_pets: bool = False
     accessibility: Optional[str] = None
     free_text_notes: Optional[str] = None
 
+    @field_validator("kashrut_level", mode="before")
+    @classmethod
+    def validate_kashrut_level(cls, v):
+        if not v:
+            return KashrutLevel.KOSHER
+        if isinstance(v, str):
+            val_lower = v.lower()
+            if val_lower in ["glatt_kosher", "glatt_mehadrin", "mehadrin", "glatt"]:
+                return KashrutLevel.GLATT_MEHADRIN
+            if val_lower in ["not_kosher", "none"]:
+                return KashrutLevel.NONE
+            if val_lower in ["basic"]:
+                return KashrutLevel.BASIC
+            if val_lower in ["kosher"]:
+                return KashrutLevel.KOSHER
+        return v
+
+
+
 class GuestProfileBase(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     is_soldier_or_national_service: bool = False
     skills_give_take: Optional[str] = None
     is_anonymous: bool = False
@@ -97,6 +119,14 @@ class GuestProfileBase(BaseModel):
     food_preferences_allergies: Optional[str] = None
     release_date: Optional[datetime] = None
     origin_city: Optional[str] = None
+
+    @field_validator("release_date", mode="before")
+    @classmethod
+    def validate_release_date(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
+
 
 class LoginRequest(BaseModel):
     username: str

@@ -72,7 +72,7 @@ export default function HostCard({ host, onBookingRequest }) {
 
           <div className="card-tags-group">
             {tags.map((tag, idx) => (
-              <span key={idx} className="card-tag-pill">
+              <span key={idx} className={tag.startsWith('#') ? "card-vibe-pill" : "card-tag-pill"}>
                 {tag}
               </span>
             ))}
